@@ -1,0 +1,16 @@
+import { type RefObject, useEffect } from "react";
+
+/** Calls `callback` on a mousedown outside `ref`. Elements with `data-ignore-click-away` don't count. */
+export const useClickOutside = (ref: RefObject<HTMLElement | null>, callback: () => void) => {
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (!ref.current) return;
+			if (event.target instanceof Node && ref.current.contains(event.target)) return;
+			if ((event.target as HTMLElement).closest("[data-ignore-click-away]")) return;
+			callback();
+		};
+
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, [ref, callback]);
+};

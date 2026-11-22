@@ -1,0 +1,36 @@
+{
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "explicit"
+	},
+	"editor.tabSize": 2,
+	"editor.insertSpaces": false,
+	"editor.rulers": [120],
+	"eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+	"files.insertFinalNewline": true,
+	"files.trimTrailingWhitespace": true,
+	"files.associations": {
+		".prettierignore": "ignore",
+		"*.atlas": "plaintext"
+	},
+	// Keep search results and the file watcher off generated trees. public/assets
+	// is AssetPack output, rewritten on every assets:build.
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/dist": true,
+		"**/pnpm-lock.yaml": true,
+		"public/assets": true,
+		".assetpack": true,
+		"playwright-report": true,
+		"test-results": true
+	},
+	"files.watcherExclude": {
+		"**/node_modules/**": true,
+		"**/dist/**": true,
+		"**/public/assets/**": true,
+		"**/.assetpack/**": true,
+		"**/test-results/**": true,
+		"**/playwright-report/**": true
+	}
+}

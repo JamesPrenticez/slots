@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>FanfareBaseSlot Framework</title>
+
+		<style>
+			@font-face {
+				font-family: "Titan One";
+				src: url("/fonts/TitanOne-Regular.woff2") format("woff2");
+				font-weight: 400;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			*,
+			*::before,
+			*::after {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+			html,
+			body,
+			#root {
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+				background: #000;
+			}
+			.loading {
+				background-image: url("/loading/loading_bg.webp");
+				background-size: cover;
+				background-position: center;
+				background-repeat: no-repeat;
+				position: fixed;
+				inset: 0;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				z-index: 9999;
+				transition: opacity 0.5s ease;
+			}
+			.loading-logo {
+				width: clamp(160px, 40vw, 460px);
+				height: auto;
+				margin-bottom: 24px;
+				object-fit: contain;
+			}
+			.loading.is-done {
+				opacity: 0;
+				pointer-events: none;
+			}
+			.loading-bar {
+				width: 300px;
+				height: 6px;
+				background: #333;
+				border-radius: 3px;
+				overflow: hidden;
+			}
+			.progress {
+				height: 100%;
+				background: #17cde5;
+				border-radius: 3px;
+				width: calc(var(--progress-factor, 0) * 100%);
+				transition: width 0.2s ease;
+			}
+			.loading-percent {
+				color: #ffffff;
+				font-family: Titan one;
+				font-size: 22px;
+				margin-top: 8px;
+				letter-spacing: 1px;
+			}
+			.error {
+				display: none;
+				position: fixed;
+				inset: 0;
+				align-items: center;
+				justify-content: center;
+				flex-direction: column;
+				background: #111;
+				z-index: 10000;
+				color: #fff;
+				font-family: sans-serif;
+			}
+			.error h2 {
+				font-size: 20px;
+				margin-bottom: 8px;
+			}
+			.error p {
+				font-size: 14px;
+				color: #aaa;
+			}
+			html,
+			body {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+				background: #000;
+			}
+			#game-root {
+				position: fixed;
+				inset: 0;
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+			}
+			#game-root canvas {
+				display: block;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="loading">
+			<img src="/loading/loading_logo.webp" alt="Game Logo" class="loading-logo" />
+			<div class="loading-bar"><div class="progress"></div></div>
+			<p class="loading-percent">0%</p>
+		</div>
+		<div class="error">
+			<h2></h2>
+			<p></p>
+		</div>
+		<div id="root"></div>
+		<script type="module" src="/src/main.tsx"></script>
+	</body>
+</html>

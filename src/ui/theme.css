@@ -1,0 +1,73 @@
+/* ─── Color tokens ──────────────────────────────────────────────────────────
+ * Single source of truth for every colour used by the React HUD.
+ * Solid colours are exposed as hex; colours that are also used with an
+ * alpha channel additionally expose an `--rgb-*` triplet so they can be
+ * composed via rgba(var(--rgb-*), <alpha>).
+ */
+:root {
+	/* Brand / accent */
+	--color-accent: #e0a52a; /* primary gold accent */
+	--color-accent-light: #f2b93a; /* lighter gold (bonus label) */
+	--color-win: #e8b84b; /* win amount gold */
+	--color-bonus: #f82738; /* bonus button red */
+
+	/* Text */
+	--color-text: #e0e0e0; /* default light text */
+	--color-text-value: #f8f8ff; /* bright value text */
+	--color-text-muted: #888888; /* muted / secondary text */
+
+	/* Surfaces & lines */
+	--color-surface: #080808; /* near-black panel surface */
+	--color-black: #000000;
+	--color-divider: #555555; /* divider line */
+
+	/* RGB triplets for alpha composition */
+	--rgb-accent: 224, 165, 42;
+	--rgb-surface: 8, 8, 8;
+	--rgb-black: 0, 0, 0;
+	--rgb-white: 255, 255, 255;
+
+	/* ─── Modal ───────────────────────────────────────────────────────────────
+   * Override any of these in a theme to restyle every Modal instance.
+   */
+	--modal-overlay-bg: rgba(var(--rgb-black), 0.7);
+	--modal-surface-bg: rgba(var(--rgb-surface), 0.95);
+	--modal-border: 1px solid var(--color-divider);
+	--modal-radius: 12px;
+	--modal-padding: 24px;
+	--modal-max-width: 480px;
+	--modal-text: var(--color-text);
+	--modal-font: "Enduro Narrow", sans-serif;
+	--modal-shadow: 0 12px 40px rgba(var(--rgb-black), 0.6);
+	--modal-close-color: var(--color-text-muted);
+	--modal-close-hover-color: var(--color-accent);
+	--modal-z-index: 1000;
+
+	/* ─── Menu panel ──────────────────────────────────────────────────────────
+   * Anchored settings panel opened from the menu button.
+   */
+	--menu-panel-bg: rgba(var(--rgb-surface), 0.85);
+	--menu-panel-blur: 16px;
+	--menu-panel-radius: 12px;
+	--menu-panel-padding: 16px;
+	--menu-panel-width: 360px;
+	--menu-panel-text: var(--color-text);
+	--menu-panel-font: "Enduro", sans-serif;
+	--menu-row-icon-color: var(--color-text);
+	--menu-row-hover-bg: rgba(var(--rgb-white), 0.12);
+
+	/* ─── Spin button ─────────────────────────────────────────────────────────
+   * Override these in a theme to recolour the spin button SVG.
+   *   --spin-btn-bg  → the "white" disc fill
+   *   --spin-btn-fg  → the "black" ring stroke and arrow glyphs
+   */
+	--spin-btn-bg: #f8f8ff;
+	--spin-btn-fg: #080808;
+
+	/* ─── Slider ──────────────────────────────────────────────────────────────*/
+	--slider-track-bg: rgba(var(--rgb-white), 0.18);
+	--slider-fill-bg: var(--color-accent);
+	--slider-thumb-bg: var(--color-text-value);
+	--slider-height: 4px;
+	--slider-thumb-size: 14px;
+}

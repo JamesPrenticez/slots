@@ -1,0 +1,21 @@
+# Claude Code template — skills, hooks, and configs, not project source.
+.claude
+
+# Build output
+dist
+
+# Dependencies
+node_modules
+
+# Lockfiles — generated, and huge; reformatting them creates unreviewable diffs
+pnpm-lock.yaml
+
+# Test artifacts
+playwright-report
+test-results
+
+# Game assets: raw artist files, the AssetPack cache, and its generated output
+# (texture atlases, Spine exports, manifest.json) — never hand-edited.
+raw-assets
+.assetpack
+public/assets

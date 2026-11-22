@@ -1,0 +1,71 @@
+{
+	"name": "fanfarebaseslot",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=22",
+		"pnpm": ">=10"
+	},
+	"packageManager": "pnpm@10.12.4",
+	"scripts": {
+		"dev": "vite",
+		"dev:with-assets": "pnpm run assets:build && vite",
+		"build": "pnpm run assets:build && tsc && vite build",
+		"preview": "vite preview",
+		"format": "prettier --write .",
+		"test": "vitest",
+		"e2e:test": "playwright test",
+		"lint": "eslint ./src",
+		"audio:m4a": "bash scripts/mp3-to-m4a.sh",
+		"assets:build": "assetpack build",
+		"assets:watch": "assetpack watch",
+		"assets:clean": "rimraf public/assets/demoslot",
+		"prepare": "husky"
+	},
+	"dependencies": {
+		"@esotericsoftware/spine-pixi-v8": "4.2.84",
+		"howler": "^2.2.4",
+		"normalize.css": "^8.0.1",
+		"pixi.js": "8.10.2",
+		"react": "^19.1.0",
+		"react-dom": "^19.1.0",
+		"styled-components": "^6.4.2",
+		"zustand": "^5.0.5"
+	},
+	"devDependencies": {
+		"@assetpack/core": "^1.7.0",
+		"@commitlint/cli": "^21.2.3",
+		"@commitlint/config-conventional": "^21.2.3",
+		"@eslint/js": "^10.0.1",
+		"@playwright/test": "^1.63.0",
+		"@types/howler": "^2.2.13",
+		"@types/react": "^19.1.5",
+		"@types/react-dom": "^19.1.5",
+		"@vitejs/plugin-react": "^4.5.0",
+		"eslint": "^10.12.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-react-hooks": "^7.1.1",
+		"eslint-plugin-react-refresh": "^0.5.7",
+		"eslint-plugin-simple-import-sort": "^14.0.0",
+		"globals": "^17.13.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^17.6.0",
+		"prettier": "^3.9.9",
+		"rimraf": "^6.0.1",
+		"typescript": "5.8.3",
+		"typescript-eslint": "^8.71.0",
+		"vite": "7.0.0",
+		"vite-plugin-svgr": "^5.2.0",
+		"vitest": "3.2.4"
+	},
+	"lint-staged": {
+		"*.{ts,tsx,js,jsx}": [
+			"eslint --fix",
+			"prettier --write"
+		],
+		"*.{json,jsonc,css,md,yml,yaml,html}": [
+			"prettier --write"
+		]
+	}
+}

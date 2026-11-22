@@ -1,0 +1,34 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ES2022",
+		"moduleResolution": "bundler",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"jsx": "react-jsx",
+		"rootDir": "./src",
+		"outDir": "./dist",
+		"sourceMap": true,
+		"strict": true,
+		"noUnusedLocals": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"exactOptionalPropertyTypes": true,
+		"skipLibCheck": true,
+		"types": ["vite/client"],
+		"paths": {
+			"@fanfare/util": ["./src/common/util/index.ts"],
+			"@stores": ["./src/stores/index.ts"],
+			"@game-ui": ["./src/game-ui/index.ts"],
+			"@components/*": ["./src/components/*"],
+			"@hooks/*": ["./src/hooks/*"],
+			"@ui/helpers": ["./src/ui/helpers/index.ts"],
+			"@sound-manager": ["./src/slot/sound/GameSoundManager.ts"],
+			"@ui/icons": ["./src/ui/icons/index.ts"],
+			"@assets/*": ["./src/ui/assets/*"],
+			"@utils/*": ["./src/utils/*"],
+			"@styles/*": ["./src/styles/*"]
+		}
+	},
+	"include": ["src"],
+	"exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,37 @@
+:root {
+	--color-white: #f8f8ff;
+	--color-black: #080808;
+	--color-bone: #f4ebd3;
+	--color-body-white: #e0e0e0;
+
+	--color-grey: #666;
+	--color-grey-light: #b3b3b3;
+	--color-grey-dark: #333;
+
+	--color-red: #ff3b3b;
+	--color-green: #67d82e;
+
+	--color-primary: #ffda62;
+	--color-primary-hover: #e7b64f;
+
+	--color-focus: #ff8a2b;
+
+	--color-panel-border: #6e5430;
+
+	--color-secondary: #16a34a;
+	--color-secondary-hover: #388e3c;
+	--color-secondary-accent: #a5d6a7;
+
+	--color-negative: #f82738;
+	--color-negative-hover: #ff3b3b;
+	--color-negative-accent: #ff6f61;
+
+	--color-muted: color-mix(in srgb, var(--color-white) 20%, transparent);
+
+	--background-color: color-mix(in srgb, var(--color-black) 50%, transparent);
+	--modal-background: color-mix(in srgb, var(--color-black) 75%, transparent);
+	--background-color-hover: color-mix(in srgb, var(--color-grey) 50%, transparent);
+	--border-color: color-mix(in srgb, var(--color-white) 30%, transparent);
+
+	--ui-color-primary: var(--color-primary);
+}

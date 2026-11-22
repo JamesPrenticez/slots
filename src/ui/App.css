@@ -1,0 +1,42 @@
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+html,
+body,
+#root {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	background: var(--color-black);
+}
+
+/* Enduro */
+/* Normal - 400 */
+@font-face {
+	font-family: "Enduro";
+	src: url("./assets/fonts/enduro-normal.woff") format("woff");
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Enduro Narrow */
+/* Normal - 400 */
+@font-face {
+	font-family: "Enduro Narrow";
+	src: url("./assets/fonts/enduro-narrow-normal.woff") format("woff");
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+.game-root {
+	position: relative;
+	width: 100vw;
+	height: 100vh;
+	overflow: hidden;
+}

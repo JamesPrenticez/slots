@@ -1,0 +1,520 @@
+import { BlurFilter, Container, Graphics, type Rectangle, Sprite, Text, TextStyle } from "pixi.js";
+
+import { GameSoundManager } from "@sound-manager";
+
+import { IsResumeRound } from "../../../common/SpinResult.js";
+import { createAbortableDelay } from "../../../common/util/AbortableDelay.js";
+import { outQuad } from "../../../common/util/Easing.js";
+import { Tweener } from "../../../common/util/Tweener.js";
+import { GameBridge } from "../../../engine/GameBridge.js";
+import { ViewStore } from "../../../fanfarebaseslot/ViewStore.js";
+import { DismissableScreen } from "../../../slot/components/DismissableScreen.js";
+import { CoreController } from "../../../slot/controllers/CoreController.js";
+import { GameBackground } from "../background/GameBackground.js";
+import { GameSlotMachine } from "../slotmachine/GameSlotMachine.js";
+
+const CARD_W = 382;
+const CARD_H = 500;
+
+const BODY = { cx: 191, cy: 390, wrap: 342, size: 22 };
+
+interface HeroDef {
+	img: string;
+	mode: "width" | "contain";
+	cx: number;
+	cy: number;
+	boxW: number;
+	boxH?: number;
+}
+
+interface CardDef {
+	tileKey: string;
+	artDef: HeroDef;
+	titleKey: string;
+	titleCx: number;
+	titleCy: number;
+	titleBoxW: number;
+	titleRot: number;
+	body: string;
+}
+
+const CARDS: CardDef[] = [
+	{
+		tileKey: "kraid-tile.png",
+		titleKey: "kraid-title.png",
+		artDef: { img: "kraid-open.png", mode: "width", cx: 191, cy: 87, boxW: 309 },
+		titleCx: 192,
+		titleCy: 279,
+		titleBoxW: 266,
+		titleRot: 1.05,
+		body: "Land 3+ Bonus Symbols to enter Gloop's Kitchen Raid Bonuses!"
+	},
+	{
+		tileKey: "gloop-tile.png",
+		titleKey: "gloop-title.png",
+		artDef: { img: "gloop-art.png", mode: "contain", cx: 185, cy: 95, boxW: 350, boxH: 230 },
+		titleCx: 191,
+		titleCy: 281,
+		titleBoxW: 289,
+		titleRot: -0.94,
+		body: "Gloop Symbols Streak across the board. Super Gloop leaves Slime Frames!"
+	},
+	{
+		tileKey: "meal-tile.png",
+		titleKey: "meal-title.png",
+		artDef: { img: "meal-art.png", mode: "contain", cx: 193, cy: 94, boxW: 360, boxH: 268 },
+		titleCx: 193,
+		titleCy: 289,
+		titleBoxW: 356,
+		titleRot: 0,
+		body: "Serving up a MAX WIN of 25,000 times your bet!"
+	}
+];
+
+// ── Screen layout ratios ──────────────────────────────────────────────────────
+
+const LOGO_W_RATIO = 0.1;
+const LOGO_Y_RATIO = 0.12;
+const CARDS_Y_RATIO = 0.25;
+const CARD_H_RATIO = 0.45;
+const CARD_GAP_RATIO = 0.03;
+const BTN_Y_RATIO = 0.92;
+
+const PORT_LOGO_W_RATIO = 0.42;
+const PORT_LOGO_Y_RATIO = 0.06;
+const PORT_CARD_W_RATIO = 0.82;
+const PORT_CARDS_Y_RATIO = 0.18;
+const PORT_DOTS_Y_RATIO = 0.76;
+const PORT_BTN_Y_RATIO = 0.88;
+
+const CAROUSEL_ADVANCE_MS = 2800;
+const CAROUSEL_SLIDE_MS = 450;
+
+// ── SplashScreen ──────────────────────────────────────────────────────────────
+
+export class SplashScreen extends DismissableScreen {
+	private readonly bgContainer: Container;
+	private readonly logo: Sprite;
+	private readonly cards: Container[] = [];
+	private readonly pressText: Text;
+
+	// Carousel (portrait)
+	private readonly carouselViewport: Container;
+	private readonly carouselStrip: Container;
+	private readonly dotsContainer: Container;
+	private readonly dots: Container[] = [];
+	private carouselIndex = 0;
+	private isPortrait = false;
+	private running = false;
+
+	constructor() {
+		super(600);
+
+		ViewStore.getInstance().set("SplashScreen", this);
+		GameBridge.getInstance().setHudVisible(false);
+
+		GameSlotMachine.getInstance().setSlotMachineVisible(false);
+		CoreController.getInstance().excludeFromAutoReveal(GameSlotMachine.getInstance());
+
+		const character = ViewStore.getInstance().get("GameCharacter");
+		character.setGameCharacterVisible(false);
+		CoreController.getInstance().excludeFromAutoReveal(character);
+
+		(ViewStore.getInstance().get("Background") as GameBackground).setLogoVisible(false);
+
+		// Background
+		const bg = Sprite.from("background.png");
+		bg.label = "bg";
+		bg.anchor.set(0.5);
+
+		this.bgContainer = new Container();
+		this.bgContainer.addChild(bg);
+		this.bgContainer.filters = [new BlurFilter({ strength: 10, quality: 8 })];
+
+		// Logo
+		this.logo = Sprite.from("logo.png");
+		this.logo.anchor.set(0.5);
+
+		for (const def of CARDS) this.cards.push(this.buildCard(def));
+
+		// Carousel containers
+		this.carouselStrip = new Container();
+		this.carouselViewport = new Container();
+		this.carouselViewport.addChild(this.carouselStrip);
+		this.carouselViewport.visible = false;
+
+		// Dots
+		this.dotsContainer = new Container();
+
+		for (let i = 0; i < CARDS.length; i++) {
+			const dot = new Container();
+			this.dots.push(dot);
+			this.dotsContainer.addChild(dot);
+		}
+
+		this.dotsContainer.visible = false;
+
+		// Press text
+		const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+		this.pressText = new Text({
+			text: "PRESS TO CONTINUE",
+			style: {
+				fontFamily: "Titan One",
+				fontSize: 22,
+				fill: 0xffffff,
+				align: "center",
+				letterSpacing: 3,
+				stroke: { color: 0x000000, width: 3 }
+			}
+		});
+
+		this.pressText.resolution = dpr;
+		this.pressText.anchor.set(0.5);
+		this.pressText.interactive = true;
+		this.pressText.eventMode = "static";
+		this.pressText.cursor = "pointer";
+		this.pressText.on("pointertap", () => this.triggerDismiss());
+
+		// Make the whole screen tappable for dismiss
+		this.interactive = true;
+		this.eventMode = "static";
+		this.on("pointertap", () => this.triggerDismiss());
+
+		this.addChild(this.bgContainer, this.logo);
+
+		for (const c of this.cards) this.addChild(c);
+
+		this.addChild(this.carouselViewport, this.dotsContainer, this.pressText);
+
+		this.running = true;
+		void this.runPulse();
+	}
+
+	private triggerDismiss(): void {
+		if (!this.running) return;
+
+		this.running = false;
+		this.dismiss();
+	}
+
+	// ── Pulse ─────────────────────────────────────────────────────────────────
+
+	private async runPulse(): Promise<void> {
+		while (this.running) {
+			await Tweener.getInstance().addTween(this.pressText, {
+				alpha: 0.15,
+				time: 650
+			});
+
+			if (!this.running) break;
+
+			await Tweener.getInstance().addTween(this.pressText, {
+				alpha: 1.0,
+				time: 650
+			});
+		}
+	}
+
+	// ── Carousel ──────────────────────────────────────────────────────────────
+
+	private async runCarousel(): Promise<void> {
+		while (this.running && this.isPortrait) {
+			await createAbortableDelay(CAROUSEL_ADVANCE_MS).promise;
+
+			if (!this.running || !this.isPortrait) break;
+
+			this.carouselIndex = (this.carouselIndex + 1) % CARDS.length;
+
+			const cardW = this.carouselStrip.children[0]?.scale.x
+				? CARD_W * (this.carouselStrip.children[0] as Container).scale.x
+				: CARD_W;
+
+			void Tweener.getInstance().addTween(this.carouselStrip.position, {
+				x: -this.carouselIndex * cardW,
+				time: CAROUSEL_SLIDE_MS,
+				easing: outQuad
+			});
+
+			this.updateDots(this.carouselIndex);
+		}
+	}
+
+	private updateDots(active: number): void {
+		this.dots.forEach((dot, i) => {
+			dot.removeChildren();
+
+			const r = i === active ? 6 : 4;
+
+			const g = new Graphics();
+			g.circle(0, 0, r).fill(i === active ? 0xffffff : 0x888888);
+
+			dot.addChild(g);
+		});
+	}
+
+	// ── Resize ────────────────────────────────────────────────────────────────
+
+	protected override resizeDesktop(screen: Rectangle, trueScreen: Rectangle): void {
+		super.resizeDesktop(screen, trueScreen);
+		this.applyLandscape(screen);
+	}
+
+	protected override resizeLandscape(screen: Rectangle, trueScreen: Rectangle): void {
+		super.resizeLandscape(screen, trueScreen);
+		this.applyLandscape(screen);
+	}
+
+	protected override resizePortrait(screen: Rectangle, trueScreen: Rectangle): void {
+		super.resizePortrait(screen, trueScreen);
+		this.applyPortrait(screen);
+	}
+
+	private applyLandscape(screen: Rectangle): void {
+		this.isPortrait = false;
+
+		const { x: sx, y: sy, width: sw, height: sh } = screen;
+
+		const cx = Math.round(sx + sw / 2);
+		const cy = Math.round(sy + sh / 2);
+
+		this.layoutBg(cx, cy, sw, sh);
+
+		this.logo.scale.set((sw * LOGO_W_RATIO) / this.logo.texture.width);
+		this.logo.position.set(cx, Math.round(sy + sh * LOGO_Y_RATIO));
+
+		for (const c of this.cards) {
+			if (c.parent !== this) this.addChild(c);
+		}
+
+		this.carouselViewport.visible = false;
+		this.dotsContainer.visible = false;
+
+		const maxH = sh * CARD_H_RATIO;
+		const gap = sw * CARD_GAP_RATIO;
+		const maxW3 = (sw - gap * 2) / 3;
+
+		const scale = Math.min(maxH / CARD_H, maxW3 / CARD_W);
+
+		const scaledW = Math.round(CARD_W * scale);
+		const scaledH = Math.round(CARD_H * scale);
+
+		const totalW = scaledW * 3 + Math.round(gap) * 2;
+
+		const startX = Math.round(cx - totalW / 2 + scaledW / 2);
+		const cardY = Math.round(sy + sh * CARDS_Y_RATIO + scaledH / 2);
+
+		this.cards.forEach((card, i) => {
+			card.scale.set(scale);
+			card.pivot.set(CARD_W / 2, CARD_H / 2);
+			card.position.set(startX + i * (scaledW + Math.round(gap)), cardY);
+		});
+
+		this.pressText.style.fontSize = 22;
+		this.pressText.position.set(cx, Math.round(sy + sh * BTN_Y_RATIO));
+	}
+
+	private applyPortrait(screen: Rectangle): void {
+		const wasPortrait = this.isPortrait;
+
+		this.isPortrait = true;
+
+		const { x: sx, y: sy, width: sw, height: sh } = screen;
+
+		const cx = Math.round(sx + sw / 2);
+		const cy = Math.round(sy + sh / 2);
+
+		this.layoutBg(cx, cy, sw, sh);
+
+		this.logo.scale.set((sw * PORT_LOGO_W_RATIO) / this.logo.texture.width);
+		this.logo.position.set(cx, Math.round(sy + sh * PORT_LOGO_Y_RATIO));
+
+		const cardScale = (sw * PORT_CARD_W_RATIO) / CARD_W;
+
+		const scaledW = Math.round(CARD_W * cardScale);
+		const scaledH = Math.round(CARD_H * cardScale);
+
+		const viewX = Math.round(cx - scaledW / 2);
+		const viewY = Math.round(sy + sh * PORT_CARDS_Y_RATIO);
+
+		this.cards.forEach((card, i) => {
+			if (card.parent !== this.carouselStrip) {
+				this.carouselStrip.addChild(card);
+			}
+
+			card.scale.set(cardScale);
+			card.pivot.set(CARD_W / 2, CARD_H / 2);
+			card.position.set(scaledW / 2 + i * scaledW, scaledH / 2);
+		});
+
+		// Viewport
+		this.carouselViewport.position.set(viewX, viewY);
+		this.carouselViewport.visible = true;
+
+		const oldMask = this.carouselViewport.mask as InstanceType<typeof Graphics> | null;
+
+		if (oldMask) {
+			this.carouselViewport.mask = null;
+			oldMask.destroy();
+		}
+
+		const maskHeight = scaledH * 1.1;
+
+		const clip = new Graphics().rect(0, -(maskHeight - scaledH) / 2, scaledW, maskHeight).fill(0xffffff);
+
+		this.carouselViewport.mask = clip;
+		this.carouselViewport.addChild(clip);
+
+		this.carouselStrip.x = -this.carouselIndex * scaledW;
+
+		// Dots
+		this.dotsContainer.visible = true;
+
+		const spacing = 22;
+		const dotsX = Math.round(cx - ((CARDS.length - 1) * spacing) / 2);
+		const dotsY = Math.round(sy + sh * PORT_DOTS_Y_RATIO);
+
+		this.dots.forEach((dot, i) => {
+			dot.position.set(dotsX + i * spacing, dotsY);
+		});
+
+		this.updateDots(this.carouselIndex);
+
+		this.pressText.style.fontSize = 18;
+		this.pressText.position.set(cx, Math.round(sy + sh * PORT_BTN_Y_RATIO));
+
+		if (!wasPortrait) {
+			this.carouselIndex = 0;
+			this.carouselStrip.x = 0;
+			void this.runCarousel();
+		}
+	}
+
+	// ── Card builder ─────────────────────────────────────────────────────────────
+
+	private buildCard(def: CardDef): Container {
+		const card = new Container();
+		const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+		const tile = Sprite.from(def.tileKey);
+		tile.scale.set(Math.max(CARD_W / tile.texture.width, CARD_H / tile.texture.height));
+		tile.anchor.set(0.5);
+		tile.position.set(Math.round(CARD_W / 2), Math.round(CARD_H / 2));
+
+		const art = Sprite.from(def.artDef.img);
+		art.scale.set(
+			def.artDef.mode === "width"
+				? def.artDef.boxW / art.texture.width
+				: Math.min(def.artDef.boxW / art.texture.width, (def.artDef.boxH ?? art.texture.height) / art.texture.height)
+		);
+		art.anchor.set(0.5);
+		art.position.set(Math.round(def.artDef.cx), Math.round(def.artDef.cy));
+
+		const titleSprite = Sprite.from(def.titleKey);
+		titleSprite.scale.set(def.titleBoxW / titleSprite.texture.width);
+		titleSprite.anchor.set(0.5);
+		titleSprite.position.set(Math.round(def.titleCx), Math.round(def.titleCy));
+		titleSprite.rotation = (def.titleRot * Math.PI) / 180;
+
+		const desc = new Text({
+			text: def.body,
+			style: new TextStyle({
+				fontFamily: "Titan One",
+				fontSize: BODY.size,
+				fill: 0xffffff,
+				align: "center",
+				wordWrap: true,
+				wordWrapWidth: BODY.wrap,
+				stroke: { color: 0x080808, width: 5 },
+				dropShadow: { color: 0x080808, alpha: 1, angle: Math.PI / 2, distance: 2, blur: 0 },
+				leading: 4
+			})
+		});
+		desc.resolution = dpr;
+		desc.anchor.set(0.5, 0.5);
+		desc.position.set(BODY.cx, BODY.cy);
+
+		card.addChild(tile, art, titleSprite, desc);
+
+		card.interactive = true;
+		card.eventMode = "static";
+		card.cursor = "pointer";
+
+		const rot = { ax: 0, ay: 0 };
+		let hovered = false;
+		let baseY = 0;
+		let baseS = 1;
+
+		const applyTilt = (): void => {
+			card.skew.x = -Math.sin(rot.ax) * 0.12;
+			card.skew.y = Math.sin(rot.ay) * 0.12;
+		};
+
+		card.on("pointerover", () => {
+			hovered = true;
+			baseY = card.y;
+			baseS = card.scale.x;
+			void Tweener.getInstance().addTween(card.position, { y: baseY - 16, time: 280, easing: outQuad });
+			void Tweener.getInstance().addTween(card.scale, {
+				x: baseS * 1.035,
+				y: baseS * 1.035,
+				time: 280,
+				easing: outQuad
+			});
+		});
+
+		card.on("pointermove", e => {
+			if (!hovered) return;
+			const p = card.parent.toLocal(e.global);
+			const nx = Math.max(-1, Math.min(1, (p.x - card.x) / (card.width / 2)));
+			const ny = Math.max(-1, Math.min(1, (p.y - card.y) / (card.height / 2)));
+			void Tweener.getInstance().addTween(rot, {
+				ay: nx * 0.14,
+				ax: -ny * 0.14,
+				time: 350,
+				easing: outQuad,
+				onUpdate: applyTilt
+			});
+		});
+
+		card.on("pointerout", () => {
+			if (!hovered) return;
+			hovered = false;
+			void Tweener.getInstance().addTween(card.position, { y: baseY, time: 350, easing: outQuad });
+			void Tweener.getInstance().addTween(card.scale, { x: baseS, y: baseS, time: 350, easing: outQuad });
+			void Tweener.getInstance().addTween(rot, { ax: 0, ay: 0, time: 500, easing: outQuad, onUpdate: applyTilt });
+		});
+
+		return card;
+	}
+
+	// ── Helpers ───────────────────────────────────────────────────────────────
+
+	private layoutBg(cx: number, cy: number, sw: number, sh: number): void {
+		const bg = this.bgContainer.getChildByLabel("bg") as Sprite;
+		const bgTex = bg.texture;
+
+		bg.scale.set(Math.max(sw / bgTex.width, sh / bgTex.height));
+
+		bg.position.set(cx, cy);
+	}
+
+	// ── Dismiss ───────────────────────────────────────────────────────────────
+
+	protected override onDismissed(): void {
+		this.running = false;
+
+		GameSoundManager.getInstance().playBaseLightDrumsBGM();
+
+		if (IsResumeRound()) {
+			CoreController.getInstance().onSpin();
+		}
+
+		GameBridge.getInstance().setHudVisible(true);
+		GameSlotMachine.getInstance().setSlotMachineVisible(true);
+
+		ViewStore.getInstance().get("GameCharacter")?.setGameCharacterVisible(true);
+
+		(ViewStore.getInstance().get("Background") as GameBackground).setLogoVisible(true);
+	}
+}

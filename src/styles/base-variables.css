@@ -1,0 +1,33 @@
+:root {
+	/* game-ui reads only --ui-*; point them at this game's tokens */
+	--ui-color-primary: var(--color-primary);
+	--ui-color-white: var(--color-white);
+	--ui-color-black: var(--color-black);
+	--ui-color-focus: var(--color-focus);
+	--ui-font-primary: var(--font-zalando);
+	--ui-font-secondary: var(--font-titan-one);
+
+	--size-control: 4.8rem;
+	--size-control-double: calc(var(--size-control) * 2 + var(--spacing-sm));
+
+	--spacing-xs: 0.4rem;
+	--spacing-sm: 0.8rem;
+	--spacing-md: 1.6rem;
+	--spacing-lg: 2.4rem;
+	--spacing-xl: 3.2rem;
+	--spacing-xxl: 4rem;
+	--spacing-xxxl: 4.8rem;
+
+	--border-thickness: calc(max(0.1rem, 1px));
+
+	--border-radius-sm: 0.6rem;
+	--border-radius-md: 0.8rem;
+	--border-radius-lg: 1rem;
+
+	/*
+	design translation helpers
+	These are the px dimensions used in the figma designs
+	*/
+	--mobile-longest-design-size: 852;
+	--mobile-shortest-design-size: 393;
+}

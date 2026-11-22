@@ -1,0 +1,104 @@
+/*
+ * Game UI design tokens.
+ *
+ * Override any token by redefining it on :root (or any ancestor) in your own
+ * CSS. The kit owns the --ui-* namespace and reads nothing outside it.
+ */
+
+:root {
+	/*
+   * Corrects for a host that redefines the root font size. 1 means the default
+   * 16px root; set it to 16 / your-root-px if you declare your own. An app on
+   * `html { font-size: 62.5% }` (a 10px root) needs 1.6.
+   *
+   * Without this the kit would render at your root size divided by 16 — on a
+   * 62.5% root, every component 1.6x too small.
+   */
+
+	/* The kit does not load fonts. Point this at whatever your app has loaded. */
+	--ui-font-primary: "Chakra Petch", sans-serif;
+	--ui-font-secondary: "Chakra Petch", sans-serif;
+
+	--ui-color-brand-red: #f82738;
+	--ui-color-brand-blue: #0028f8;
+	--ui-color-green: #27f854;
+	--ui-color-red: #ff0000;
+
+	--ui-color-error-red: #ff3b30;
+
+	/* BASE */
+	--ui-color-black: #080808;
+	--ui-color-white: #f8f8ff;
+	--ui-color-grey: #666666;
+	--ui-color-body: #e0e0e0;
+	--ui-color-body-secondary: #b3b3b3;
+
+	--ui-color-dark-muted: color-mix(in srgb, var(--ui-color-white) 20%, transparent);
+	--ui-color-light-muted: color-mix(in srgb, var(--ui-color-black) 20%, transparent);
+
+	--ui-text-blue: #90bde3;
+	--ui-border-color: rgba(255, 255, 255, 0.2);
+	--ui-border-disabled-color: rgba(255, 255, 255, 0.2);
+
+	--ui-button-bg-color: rgba(4, 4, 4, 0.6);
+	--ui-button-disabled-bg-color: rgba(11, 11, 11, 0.4);
+	--ui-button-green-bg-color: #6ec278;
+	--ui-button-red-bg-color: #ee2923;
+	--ui-button-green-border-color: #64c278;
+	--ui-button-text-color: #ffffff;
+	--ui-button-default-bg-color: #000000;
+	--ui-button-shadow:
+		0.1rem 0.1rem 0rem var(--ui-color-black),
+		0rem -0.3rem 0rem color-mix(in srgb, var(--ui-color-black) 25%, transparent) inset,
+		0rem 0.3rem 0rem color-mix(in srgb, var(--ui-color-white) 20%, transparent) inset;
+
+	--ui-button-bonus-gradient-start: #e89730;
+	--ui-button-bonus-gradient-end: #f1d44e;
+	--ui-button-bonus-shadow:
+		0.1rem 0.1rem 0rem var(--ui-color-black), 0rem 0.3rem 0rem #ffe7a7 inset, 0rem -0.3rem 0rem #844400 inset;
+
+	--ui-input-bg-color: var(--ui-color-black);
+	--ui-input-border-color: #333333;
+	--ui-input-icon-bg-color: color-mix(in srgb, var(--ui-color-white) 10%, transparent);
+	--ui-input-text-shadow: 0 0.2rem 0 var(--ui-color-black);
+
+	--ui-color-primary: #eaeaea;
+	--ui-color-soft-accent: color-mix(in srgb, var(--ui-color-primary) 50%, transparent);
+	--ui-color-hover: #000000;
+	--ui-black-transparent: color-mix(in srgb, var(--ui-color-black) 50%, transparent);
+
+	--ui-color-hard-accent: var(--ui-color-primary);
+}
+
+/*
+ * Theme variants.
+ *
+ * Activate with either a class or a data-theme attribute on any ancestor:
+ *   <html class="theme-gold">  or  <html data-theme="gold">
+ *
+ * Both are supported because web-services themes by class, while data-theme is
+ * the more common convention elsewhere.
+ */
+
+[data-theme="green"],
+.theme-green {
+	--ui-color-primary: #4fd18b;
+}
+
+[data-theme="neon-green"],
+.theme-neon-green {
+	--ui-color-primary: #2d9b68;
+}
+
+[data-theme="gold"],
+.theme-gold {
+	--ui-color-primary: #ffd29e;
+}
+
+[data-theme="purple"],
+.theme-purple {
+	--ui-color-primary: #6785ea;
+	--ui-color-soft-accent: color-mix(in srgb, var(--ui-color-primary) 50%, transparent);
+	--ui-color-hover: #7b96f0;
+	--ui-color-hard-accent: #af2ee0;
+}

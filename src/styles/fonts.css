@@ -1,0 +1,84 @@
+@import url("https://fonts.googleapis.com/css2?family=Zalando+Sans:ital,wdth,wght@0,75..125,200..900;1,75..125,200..900&display=swap");
+
+/* Self-hosted so the face is registered before the game loads. MultiplierRow's
+   BitmapText bakes glyphs on first use, so a late font sticks as the fallback. */
+@font-face {
+	font-family: "Titan One";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/TitanOne-Regular.woff2") format("woff2");
+}
+
+:root {
+	--font-size-legal: 1rem;
+	--font-size-xxs: 1.2rem;
+	--font-size-xs: 1.4rem;
+	--font-size-base: 1.6rem;
+	--font-size-sm: 1.8rem;
+	--font-size-md: 2.4rem;
+
+	--font-size-lg: 2.8rem;
+	--font-size-xl: 3.2rem;
+	--font-size-xxl: 4rem;
+	--font-size-xxxl: 4.8rem;
+	--font-size-xxxxl: 8rem;
+	--font-size-xxxxxl: 9.6rem;
+
+	--font-width-narrow: "wdth" 90;
+	--font-width-normal: "wdth" 100;
+
+	--font-weight-bold: 700;
+	--font-weight-semibold: 600;
+	--font-weight-normal: 400;
+
+	/* Titan One Font Styles */
+	--font-titan-one: "Titan One", sans-serif;
+	--font-titan-one-legal: var(--font-weight-normal) var(--font-size-legal)/1 var(--font-titan-one);
+	--font-titan-one-xxs: var(--font-weight-normal) var(--font-size-xxs)/1 var(--font-titan-one);
+	--font-titan-one-xs: var(--font-weight-normal) var(--font-size-xs)/1 var(--font-titan-one);
+	--font-titan-one-base: var(--font-weight-normal) var(--font-size-base)/1 var(--font-titan-one);
+	--font-titan-one-sm: var(--font-weight-normal) var(--font-size-sm)/1 var(--font-titan-one);
+	--font-titan-one-md: var(--font-weight-normal) var(--font-size-md)/1 var(--font-titan-one);
+	--font-titan-one-lg: var(--font-weight-normal) var(--font-size-lg)/1 var(--font-titan-one);
+	--font-titan-one-xl: var(--font-weight-normal) var(--font-size-xl)/1 var(--font-titan-one);
+	--font-titan-one-xxl: var(--font-weight-normal) var(--font-size-xxl)/1 var(--font-titan-one);
+	--font-titan-one-xxxl: var(--font-weight-normal) var(--font-size-xxxl)/1 var(--font-titan-one);
+	--font-titan-one-xxxxl: var(--font-weight-normal) var(--font-size-xxxxl)/1 var(--font-titan-one);
+	--font-titan-one-xxxxxl: var(--font-weight-normal) var(--font-size-xxxxxl)/1 var(--font-titan-one);
+
+	/* Zalando Font Styles */
+	--font-zalando: "Zalando Sans", sans-serif;
+	--font-zalando-legal: var(--font-weight-normal) var(--font-size-legal)/1.2 var(--font-zalando);
+	--font-zalando-xxs: var(--font-weight-normal) var(--font-size-xxs)/1.2 var(--font-zalando);
+	--font-zalando-xs: var(--font-weight-normal) var(--font-size-xs)/1.2 var(--font-zalando);
+	--font-zalando-base: var(--font-weight-normal) var(--font-size-base)/1.2 var(--font-zalando);
+	--font-zalando-sm: var(--font-weight-normal) var(--font-size-sm)/1.2 var(--font-zalando);
+
+	/* Zalando Bold Narrow Font Styles */
+	/* all Zalando Bold Narrow need to add `font-variation-settings: var(--font-width-narrow);` alongside this font var */
+	/* eg:
+		font: var(--font-zalando-base);
+		font-variation-settings: var(--font-width-narrow);
+	*/
+	--font-zalando-semibold-legal: var(--font-weight-semibold) var(--font-size-legal)/1 var(--font-zalando);
+	--font-zalando-semibold-xxs: var(--font-weight-semibold) var(--font-size-xxs)/1 var(--font-zalando);
+	--font-zalando-semibold-xs: var(--font-weight-semibold) var(--font-size-xs)/1 var(--font-zalando);
+	--font-zalando-semibold-base: var(--font-weight-semibold) var(--font-size-base)/1 var(--font-zalando);
+	--font-zalando-semibold-sm: var(--font-weight-semibold) var(--font-size-sm)/1 var(--font-zalando);
+	--font-zalando-semibold-md: var(--font-weight-semibold) var(--font-size-md)/1 var(--font-zalando);
+	--font-zalando-semibold-lg: var(--font-weight-semibold) var(--font-size-lg)/1 var(--font-zalando);
+}
+
+html,
+body {
+	color: var(--color-white);
+	font-family: var(--font-zalando);
+	font-size: 10px;
+	line-height: 100%;
+}
+
+button {
+	color: var(--color-white);
+	font-family: var(--font-titan-one);
+}
