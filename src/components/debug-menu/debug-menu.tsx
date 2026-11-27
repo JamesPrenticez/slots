@@ -3,6 +3,8 @@ import styled from "styled-components";
 
 import { useGameStore } from "@stores";
 
+import { GameBridge } from "../../engine/GameBridge";
+
 const Panel = styled.div`
 	position: fixed;
 	top: 12px;
@@ -11,6 +13,10 @@ const Panel = styled.div`
 	font-family: monospace;
 	font-size: 11px;
 	user-select: none;
+
+	h1 {
+		font-size: var(--font-size-legal);
+	}
 `;
 
 const Toggle = styled.button`
@@ -52,6 +58,33 @@ const Table = styled.table`
 
 	tr:last-child td {
 		border-bottom: none;
+	}
+`;
+
+const Actions = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-top: 6px;
+	padding: 4px;
+	background: rgba(var(--rgb-black), 0.8);
+	border: 1px solid rgba(var(--rgb-accent), 0.4);
+	border-radius: 4px;
+
+	button {
+		padding: 3px 8px;
+		background: none;
+		color: var(--color-text);
+		border: 1px solid rgba(var(--rgb-white), 0.15);
+		border-radius: 3px;
+		font-family: monospace;
+		font-size: 11px;
+		text-align: left;
+		cursor: pointer;
+	}
+	button:disabled {
+		opacity: 0.4;
+		cursor: default;
 	}
 `;
 
@@ -101,6 +134,18 @@ export function DebugMenu() {
 						))}
 					</tbody>
 				</Table>
+			)}
+			{open && (
+				<Actions>
+					<h1>Animations</h1>
+					{GameBridge.getInstance()
+						.getDebugActions()
+						.map(a => (
+							<button key={a.label} disabled={gameState !== "IDLE"} onClick={() => void a.run()}>
+								▶ {a.label}
+							</button>
+						))}
+				</Actions>
 			)}
 		</Panel>
 	);

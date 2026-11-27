@@ -91,4 +91,13 @@ export class GameBridge {
 	public setHudVisible(visible: boolean): void {
 		this.hudVisibilityHandler?.(visible);
 	}
+
+	// Dev-only: named animation sequences the debug menu can force-play.
+	private debugActions: { label: string; run: () => void | Promise<void> }[] = [];
+	public registerDebugActions(actions: { label: string; run: () => void | Promise<void> }[]): void {
+		this.debugActions = actions;
+	}
+	public getDebugActions(): readonly { label: string; run: () => void | Promise<void> }[] {
+		return this.debugActions;
+	}
 }

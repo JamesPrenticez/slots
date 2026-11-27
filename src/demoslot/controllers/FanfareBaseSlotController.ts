@@ -24,6 +24,7 @@ import { GameSlotMachine } from "../components/slotmachine/GameSlotMachine.js";
 import { SplashScreen } from "../components/splash/SplashScreen.js";
 import { AVAILABLE_BETS, DEFAULT_BET, REEL_ASPECT, SLOT_CONFIG } from "../config/GameConfig.js";
 import { THEME } from "../config/ThemeConfig.js";
+import { registerDebugActions } from "../debug/debugActions.js";
 import { JPSClient } from "../net/JPSClient.js";
 import { JPSRGSAdapter } from "../net/JPSRGSAdapter.js";
 
@@ -103,6 +104,8 @@ export class FanfareBaseSlotController extends CoreController {
 
 		await nextFrame();
 		await this.addToScene(new FreeSpinCounter());
+
+		if (import.meta.env.DEV) registerDebugActions();
 
 		await nextFrame();
 
