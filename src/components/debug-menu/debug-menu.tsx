@@ -3,6 +3,7 @@ import styled from "styled-components";
 
 import { useGameStore } from "@stores";
 
+import { ACTIVE_PACK, type PackName, PACKS, setActivePack } from "../../demoslot/config/ThemeConfig";
 import { GameBridge } from "../../engine/GameBridge";
 
 const Panel = styled.div`
@@ -137,6 +138,12 @@ export function DebugMenu() {
 			)}
 			{open && (
 				<Actions>
+					<h1>Asset pack</h1>
+					<select value={ACTIVE_PACK} onChange={e => setActivePack(e.target.value as PackName)}>
+						{Object.keys(PACKS).map(k => (
+							<option key={k}>{k}</option>
+						))}
+					</select>
 					<h1>Animations</h1>
 					{GameBridge.getInstance()
 						.getDebugActions()

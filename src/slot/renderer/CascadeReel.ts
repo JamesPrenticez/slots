@@ -1,12 +1,11 @@
-import { Container, Rectangle, Ticker } from "pixi.js";
+import { Container, Rectangle } from "pixi.js";
 
 import { GameSoundManager } from "@sound-manager";
 
 import { CoreState } from "../../common/CoreState.js";
 import { turboDuration } from "../../common/util/Duration.js";
-import { gravityIn, inOutSine, outCubic, outElastic, subtleBounce } from "../../common/util/Easing.js";
-import { Tweener } from "../../common/util/Tweener.js";
 import type { ReelSymbolView, SymbolWithId } from "./Reel.js";
+import { defaultSymbolAnim, type SymbolAnim } from "./SymbolAnim.js";
 
 /**
  * CascadeReel — one column of symbols in a cascade slot.
@@ -32,7 +31,8 @@ export class CascadeReel extends Container {
 		private readonly rows: number,
 		private readonly symbolSize: number,
 		private readonly symbolViewFactory: (sym: SymbolWithId, initialY: number) => ReelSymbolView,
-		initialSymbols: SymbolWithId[]
+		initialSymbols: SymbolWithId[],
+		private readonly anim: SymbolAnim = defaultSymbolAnim
 	) {
 		super({
 			boundsArea: new Rectangle(-symbolSize / 2, 0, symbolSize, symbolSize * rows)
@@ -53,7 +53,7 @@ export class CascadeReel extends Container {
 	private static playScatterDrop(): void {
 		CascadeReel.scatterLandCount++;
 		const index = Math.min(CascadeReel.scatterLandCount, CascadeReel.MAX_SCATTER_SFX);
-		GameSoundManager.getInstance().playSfx(`FTS_ScatterDrop${index}_v2`);
+		GameSoundManager.getInstance().cue("scatterDrop", index - 1);
 	}
 
 	// allOut
@@ -68,7 +68,7 @@ export class CascadeReel extends Container {
 				const rowDelay = CoreState.turboSpin ? 0 : (this.rows - 1 - row) * 30;
 				const targetY = view.y + moveDistance;
 
-				return this.animateY(view, targetY, turboDuration(300, 300), turboDuration(columnDelay) + rowDelay, "easeIn");
+				return this.anim.fall(view, targetY, turboDuration(300, 300), turboDuration(columnDelay) + rowDelay, "out");
 			})
 		);
 
@@ -92,27 +92,32 @@ export class CascadeReel extends Container {
 				const view = this.symbolViewFactory(sym, startY);
 				this.addChild(view as unknown as Container);
 				this.views[row] = view;
-				return this.animateY(
-					view,
-					endY,
-					dropTime,
-					turboDuration(columnDelay + CascadeReel.SYMBOL_DROP_DELAY * staggerMult * (CascadeReel.TOTAL_ROWS - row), 0),
-					"easeIn"
-				).then(() => {
-					this.squeezeOnLand(view);
-					if (sym.id === "SLIME") {
-						GameSoundManager.getInstance().playSfx("FTS_SlimeDrop");
-					} else if (sym.id === "SUPER_SLIME") {
-						GameSoundManager.getInstance().playSfx("FTS_SuperSlimeDrop");
-					} else if (sym.id === "SCATTER") {
-						if (CascadeReel.scatterLandCount === 2) {
-							GameSoundManager.getInstance().playLoop("FTS_ReelDrop_SlowRoll");
-							GameSoundManager.getInstance().playLoop("FTS_DrumRoll");
+				return this.anim
+					.fall(
+						view,
+						endY,
+						dropTime,
+						turboDuration(
+							columnDelay + CascadeReel.SYMBOL_DROP_DELAY * staggerMult * (CascadeReel.TOTAL_ROWS - row),
+							0
+						),
+						"in"
+					)
+					.then(() => {
+						this.anim.land(view);
+						if (sym.id === "SLIME") {
+							GameSoundManager.getInstance().cue("slimeDrop");
+						} else if (sym.id === "SUPER_SLIME") {
+							GameSoundManager.getInstance().cue("superSlimeDrop");
+						} else if (sym.id === "SCATTER") {
+							if (CascadeReel.scatterLandCount === 2) {
+								GameSoundManager.getInstance().loopCue("reelSlowRoll");
+								GameSoundManager.getInstance().loopCue("drumRoll");
+							}
+							//TODO add scatter specific sound, based on no of scatters
+							CascadeReel.playScatterDrop();
 						}
-						//TODO add scatter specific sound, based on no of scatters
-						CascadeReel.playScatterDrop();
-					}
-				});
+					});
 			})
 		);
 	}
@@ -133,7 +138,7 @@ export class CascadeReel extends Container {
 
 			const targetPos = this.rowY(targetRow);
 			if (view.position.y !== targetPos) {
-				animations.push(this.animateY(view, targetPos, turboDuration(300, 300)));
+				animations.push(this.anim.fall(view, targetPos, turboDuration(300, 300), 0, "settle"));
 			}
 		});
 
@@ -156,13 +161,15 @@ export class CascadeReel extends Container {
 				const view = this.symbolViewFactory(sym, startY);
 				this.addChild(view as unknown as Container);
 				this.views[i] = view;
-				return this.animateY(
-					view,
-					endY,
-					dropTime,
-					turboDuration(columnDelay + CascadeReel.SYMBOL_DROP_DELAY * staggerMult * (newSymbols.length - i), 0),
-					"easeIn"
-				).then(() => this.squeezeOnLand(view));
+				return this.anim
+					.fall(
+						view,
+						endY,
+						dropTime,
+						turboDuration(columnDelay + CascadeReel.SYMBOL_DROP_DELAY * staggerMult * (newSymbols.length - i), 0),
+						"in"
+					)
+					.then(() => this.anim.land(view));
 			})
 		);
 	}
@@ -178,32 +185,12 @@ export class CascadeReel extends Container {
 		return row * this.symbolSize + this.symbolSize / 2;
 	}
 
-	/**
-	 * Animate a view's Y property using Tweener.
-	 * easeIn  = gravityIn (cubic, accelerating — used for allOut)
-	 * easeOut = subtleBounce (5% overshoot — used for allIn/cascade)
-	 */
-	private async animateY(
-		view: ReelSymbolView,
-		targetY: number,
-		durationMs: number,
-		delayMs = 0,
-		easing: "easeOut" | "easeIn" = "easeOut"
-	): Promise<void> {
-		await Tweener.getInstance().addTween(view, {
-			y: targetY,
-			time: durationMs,
-			delay: delayMs,
-			easing: easing === "easeIn" ? gravityIn : subtleBounce
-		});
-	}
-
 	public async convertToFinalSymbol(row: number, newSymbolId: string): Promise<void> {
 		const old = this.views[row];
 
 		// Phase 1 — pop/fade out the old symbol in place (same motion as removeWinningSymbols)
 		if (old) {
-			await this.popOut(old);
+			await this.anim.popOut(old);
 			old.parent?.removeChild(old);
 			old.destroy?.();
 		}
@@ -215,124 +202,17 @@ export class CascadeReel extends Container {
 		this.addChild(view);
 		this.views[row] = view;
 
-		await this.popIn(view);
+		await this.anim.popIn(view);
 	}
 
-	private async popOut(view: ReelSymbolView, duration = 50): Promise<void> {
-		const scaledDuration = turboDuration(duration, 20);
-		const scaleTween = Tweener.getInstance().addTween(view.scale, {
-			x: 1.3,
-			y: 1.3,
-			time: scaledDuration,
-			easing: gravityIn
-		});
-		const alphaTween = Tweener.getInstance().addTween(view, {
-			alpha: 0,
-			time: scaledDuration,
-			easing: gravityIn
-		});
-
-		return Promise.all([scaleTween, alphaTween]).then(() => {});
-	}
-
-	private async popIn(view: ReelSymbolView, duration = 50): Promise<void> {
-		view.scale.set(0.7);
-		view.alpha = 0;
-
-		const scaledDuration = turboDuration(duration, 20);
-		const scaleTween = Tweener.getInstance().addTween(view.scale, {
-			x: 1,
-			y: 1,
-			time: scaledDuration,
-			easing: subtleBounce
-		});
-		const alphaTween = Tweener.getInstance().addTween(view, {
-			alpha: 1,
-			time: scaledDuration,
-			easing: subtleBounce
-		});
-
-		return Promise.all([scaleTween, alphaTween]).then(() => {
-			GameSoundManager.getInstance().playSfx(`FTS_SlimeBurst_2`);
-		});
-	}
-
-	public async removeSymbol(row: number, duration = 400): Promise<void> {
+	public async removeSymbol(row: number): Promise<void> {
 		const view = this.views[row];
 		if (!view) return;
 
-		await new Promise<void>(resolve => {
-			const startTime = performance.now();
-
-			const tick = () => {
-				const progress = Math.min((performance.now() - startTime) / duration, 1);
-
-				if (progress < 0.4) {
-					const p = progress / 0.4;
-					view.scale.set(1 + p * 0.3);
-					view.alpha = 1;
-				} else {
-					const p = (progress - 0.4) / 0.6;
-					const ease = p * p;
-					view.scale.set(Math.max(0, 1.3 - ease * 1.3));
-					view.alpha = 1 - p;
-				}
-
-				if (progress >= 1) {
-					Ticker.shared.remove(tick);
-					resolve();
-				}
-			};
-
-			Ticker.shared.add(tick);
-		});
+		await this.anim.remove(view);
 
 		view.parent?.removeChild(view);
 		view.destroy?.();
 		this.views[row] = null;
-	}
-
-	private async squeezeOnLand(view: ReelSymbolView): Promise<void> {
-		if (CoreState.turboSpin) return;
-
-		if (view.destroyed) return;
-
-		const b = view.scale.x;
-		const tweener = Tweener.getInstance();
-
-		tweener.removeTween(view.scale);
-
-		const abortController = new AbortController();
-
-		// Impact
-		await tweener.addTween(view.scale, {
-			x: b * 1.24,
-			y: b * 0.74,
-			time: 90,
-			easing: outCubic,
-			abortSignal: abortController.signal
-		});
-
-		if (view.destroyed) return;
-
-		// Rebound
-		await tweener.addTween(view.scale, {
-			x: b * 0.9,
-			y: b * 1.1,
-			time: 140,
-			easing: inOutSine,
-			abortSignal: abortController.signal
-		});
-
-		if (view.destroyed) return;
-
-		// Settle
-		await tweener.addTween(view.scale, {
-			x: b,
-			y: b,
-			time: 450,
-			easing: outElastic,
-			abortSignal: abortController.signal
-		});
 	}
 }

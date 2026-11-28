@@ -107,7 +107,7 @@ const CallToActionSection = () => {
 			return;
 		}
 		if (spinning || isGameSpinning) return;
-		sound.playSfx("FTS_SpinButtonClick");
+		sound.cue("spinClick");
 		setSpinning(true);
 		const spine = ViewStore.getInstance().get("GameCharacter").getSpine();
 		spine?.play("spin", false); // one-shot on track 0

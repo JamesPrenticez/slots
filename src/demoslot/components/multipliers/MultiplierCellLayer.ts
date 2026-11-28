@@ -3,6 +3,7 @@ import { Container, FillGradient, Sprite, Text, Texture } from "pixi.js";
 import { CoreState } from "../../../common/CoreState";
 import { ViewStore } from "../../../fanfarebaseslot/ViewStore";
 import { SLOT_CONFIG } from "../../config/GameConfig";
+import { type MultiplierTier, THEME } from "../../config/ThemeConfig";
 
 export interface MultiplierCellData {
 	reel: number;
@@ -10,47 +11,14 @@ export interface MultiplierCellData {
 	multiplier: number;
 }
 
-interface MultiplierTier {
-	threshold: number;
-	bgTexture: string;
-	strokeColor: number;
-	gradientStart: number;
-	gradientEnd: number;
-}
-
-interface SlimeTier {
-	threshold: number;
-	bgTexture: string;
-}
-
-// Sorted descending — first tier whose threshold the multiplier meets or exceeds wins
-const MULTIPLIER_TIERS: MultiplierTier[] = [
-	{
-		threshold: 1024,
-		bgTexture: "1024x_Bg.png",
-		strokeColor: 0x9dec9b,
-		gradientStart: 0x007228,
-		gradientEnd: 0x2b9964
-	},
-	{ threshold: 128, bgTexture: "128x_Bg.png", strokeColor: 0xa26fe0, gradientStart: 0x3a0a99, gradientEnd: 0x643eaf },
-	{ threshold: 16, bgTexture: "16x_Bg.png", strokeColor: 0xf29c62, gradientStart: 0xad2300, gradientEnd: 0xbf5338 },
-	{ threshold: 2, bgTexture: "2x_Bg.png", strokeColor: 0xe4a668, gradientStart: 0x4c290b, gradientEnd: 0x71553e }
-];
-
-// Sorted descending — first tier whose threshold the multiplier meets or exceeds wins.
-// 256x and 1024x share the top asset since only three slime textures exist.
-const SLIME_TIERS: SlimeTier[] = [
-	{ threshold: 256, bgTexture: "slime_Tier3.png" },
-	{ threshold: 16, bgTexture: "slime_Tier2.png" },
-	{ threshold: 2, bgTexture: "slime_Tier1.png" }
-];
+const T = THEME.multipliers;
 
 function getTierForMultiplier(multiplier: number): MultiplierTier {
-	return MULTIPLIER_TIERS.find(tier => multiplier >= tier.threshold) ?? MULTIPLIER_TIERS[MULTIPLIER_TIERS.length - 1];
+	return T.tiers.find(tier => multiplier >= tier.threshold) ?? T.tiers[T.tiers.length - 1];
 }
 
-function getSlimeTierForMultiplier(multiplier: number): SlimeTier {
-	return SLIME_TIERS.find(tier => multiplier >= tier.threshold) ?? SLIME_TIERS[SLIME_TIERS.length - 1];
+function getSlimeTierForMultiplier(multiplier: number): { threshold: number; bgTexture: string } {
+	return T.slimeTiers.find(tier => multiplier >= tier.threshold) ?? T.slimeTiers[T.slimeTiers.length - 1];
 }
 
 function buildGradient(tier: MultiplierTier, height: number): FillGradient {
@@ -118,7 +86,7 @@ export class MultiplierCellLayer extends Container {
 		const label = this.labels.get(key)!;
 
 		container.position.set(this.getCellX(cell.reel), this.getCellY(cell.row));
-		label.text = `×${cell.multiplier}`;
+		label.text = `${T.label.prefix}${cell.multiplier}`;
 	}
 
 	private removeInactiveCells(multiplierCells: MultiplierCellData[]): void {
@@ -140,7 +108,7 @@ export class MultiplierCellLayer extends Container {
 		//container.rotation = -0.08;
 
 		const background = Sprite.from(bgTexture);
-		background.scale.set(0.6);
+		background.scale.set(T.bgScale);
 		background.anchor.set(0.5);
 
 		const label = this.buildLabel(tier);
@@ -162,26 +130,26 @@ export class MultiplierCellLayer extends Container {
 
 		background.texture = Texture.from(bgTexture);
 
-		const labelHeight = this.symbolSize * 0.3;
+		const labelHeight = this.symbolSize * T.label.heightRatio;
 		label.style.fill = buildGradient(tier, labelHeight);
-		label.style.stroke = { color: tier.strokeColor, width: 3 };
+		label.style.stroke = { color: tier.strokeColor, width: T.label.strokeWidth };
 
 		this.cellTiers.set(key, tierKey);
 	}
 
 	private buildLabel(tier: MultiplierTier): Text {
-		const labelHeight = this.symbolSize * 0.3;
+		const labelHeight = this.symbolSize * T.label.heightRatio;
 
 		const label = new Text({
 			text: "",
 			style: {
-				fontFamily: "Titan One",
-				fontWeight: "900",
-				fontSize: this.symbolSize * 0.28,
+				fontFamily: T.label.fontFamily,
+				fontWeight: T.label.fontWeight as "900",
+				fontSize: this.symbolSize * T.label.sizeRatio,
 				fill: buildGradient(tier, labelHeight),
 				stroke: {
 					color: tier.strokeColor,
-					width: 3,
+					width: T.label.strokeWidth,
 					join: "round"
 				},
 				align: "center"

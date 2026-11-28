@@ -1,4 +1,5 @@
 import { SYMBOL_DEFINITIONS, type SymbolDefinition } from "./GameConfig.js";
+import { THEME } from "./ThemeConfig.js";
 
 /**
  * SymbolConverter — maps symbol IDs to textures and payout data.
@@ -16,7 +17,7 @@ export class SymbolConverter {
 	}
 
 	public static getTexture(id: string): string {
-		return this.getDefinition(id).texture;
+		return THEME.symbols.textures[id] ?? this.getDefinition(id).texture;
 	}
 
 	/**

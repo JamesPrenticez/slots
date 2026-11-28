@@ -9,6 +9,7 @@ import { Tweener } from "../../../common/util/Tweener.js";
 import { GameBridge } from "../../../engine/GameBridge.js";
 import { ViewStore } from "../../../fanfarebaseslot/ViewStore.js";
 import { Resizable } from "../../../slot/renderer/Resizable.js";
+import { THEME } from "../../config/ThemeConfig.js";
 import { GameBackground } from "../background/GameBackground.js";
 import { FreeSpinIntro } from "./FreeSpinIntro.js";
 import { FreeSpinOutro } from "./FreeSpinOutro.js";
@@ -33,11 +34,11 @@ const POPUP_START_DELAY = 0; // when popup animation + tap-to-dismiss activate
 
 export class FreeSpinScreen extends Resizable {
 	private readonly darkOverlay = new Graphics();
-	private readonly overlay = Sprite.from("BonusIntroBG.png");
+	private readonly overlay = Sprite.from(THEME.backgrounds.bonusIntro);
 	private readonly intro = new FreeSpinIntro();
 	private readonly outro = new FreeSpinOutro();
 	private readonly retrigger = new FreeSpinRetriggerPopup();
-	private readonly character = Sprite.from("BonusIntro_Character.png");
+	private readonly character = Sprite.from(THEME.backgrounds.bonusIntroCharacter);
 
 	private readonly backgroundBlur = new BlurFilter({ strength: 0 });
 	private onDismiss?: (() => void) | undefined;
@@ -293,13 +294,13 @@ export class FreeSpinScreen extends Resizable {
 	public switchBackground(bonus: boolean): void {
 		if (ViewStore.getInstance().has("Background")) {
 			(ViewStore.getInstance().get("Background") as GameBackground).setBackgroundTexture(
-				bonus ? "Bg-Bonus" : "background"
+				bonus ? THEME.backgrounds.bonus : THEME.backgrounds.main
 			);
 		}
 		if (ViewStore.getInstance().has("CascadeSlotMachine")) {
 			ViewStore.getInstance()
 				.get("CascadeSlotMachine")
-				.setReelBackground(bonus ? "reelBg-bonus" : "reelBg");
+				.setReelBackground(bonus ? THEME.backgrounds.reelBonus : THEME.backgrounds.reel);
 		}
 	}
 

@@ -547,7 +547,7 @@ const BonusModal = ({ open, onClose }: BonusModalProps) => {
 	}, [open]);
 
 	const close = useCallback(() => {
-		sound.playSfx("temp_btn_features_open");
+		sound.cue("featuresOpen");
 		onClose();
 	}, [onClose, sound]);
 
@@ -555,7 +555,7 @@ const BonusModal = ({ open, onClose }: BonusModalProps) => {
 
 	const handleSelect = (feature: Feature, price: number) => {
 		if (price > balance || pending) return;
-		//sound.playSfx("temp_btn_hover");
+		//sound.cue("hover");
 		setConfirming(feature);
 	};
 
@@ -637,7 +637,7 @@ const BonusModal = ({ open, onClose }: BonusModalProps) => {
 												$affordable={affordable}
 												disabled={!affordable || pending !== null}
 												aria-label={`${feature.title} — ${fmt(price)}`}
-												onMouseEnter={() => affordable && sound.playSfx("temp_btn_hover")}
+												onMouseEnter={() => affordable && sound.cue("hover")}
 												onClick={() => handleSelect(feature, price)}
 											>
 												<ArtSection $kind={feature.kind}>

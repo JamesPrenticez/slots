@@ -72,7 +72,7 @@ export class GameCharacter extends Resizable {
 
 	/** Fires on click/tap of the character art. */
 	private onClick(): void {
-		GameSoundManager.getInstance().playSfx("FTS_Gloop_Quip1");
+		GameSoundManager.getInstance().cue("characterQuip");
 
 		// Animation calls only make sense for a spine — skip them for a PNG.
 		if (!this.spine) return;

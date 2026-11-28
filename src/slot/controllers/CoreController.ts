@@ -4,6 +4,7 @@ import { BetData } from "../../common/models/data/BetData.js";
 import { WinData } from "../../common/models/data/WinData.js";
 import { createAbortableDelay } from "../../common/util/AbortableDelay.js";
 import { nextFrame, nextFrameIfExceedFrameTime } from "../../common/util/index.js";
+import { assetsReady } from "../../engine/assets.js";
 import {
 	FanfareBaseSlotApplication,
 	getFanfareBaseSlotApplication
@@ -139,8 +140,8 @@ export abstract class CoreController extends SlotMachineController {
 	// -- Asset loading
 
 	private async loadPreloadBundle(): Promise<void> {
-		// Assets.init() called at module scope in main.tsx — manifest already registered.
-		// Just load the bundle
+		// initAssets() is called at module scope in main.tsx — wait for the merged manifest.
+		await assetsReady();
 		const minLoaderTime = import.meta.env.DEV ? Promise.resolve() : createAbortableDelay(3000).promise;
 
 		await Promise.all([

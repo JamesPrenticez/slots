@@ -65,7 +65,7 @@ export const BonusSection = () => {
 	const sound = GameSoundManager.getInstance();
 
 	const handleClick = () => {
-		sound.playSfx("ui_click");
+		sound.cue("uiClick");
 		openModal("bonuses");
 	};
 	return <StyledButton label="" title="Bonus Buy" onClick={handleClick} />;

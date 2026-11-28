@@ -1,55 +1,42 @@
 import { Container, Rectangle, Sprite, Texture, Ticker } from "pixi.js";
 
-import { turboDuration } from "../../../common/util/Duration.js";
-import { gravityIn, outQuad } from "../../../common/util/Easing.js";
 import { makeStyledText } from "../../../common/util/Texthelper.js";
-import { Tweener } from "../../../common/util/Tweener.js";
 import { Resizable } from "../../../slot/renderer/Resizable.js";
+import { THEME } from "../../config/ThemeConfig.js";
+import { tex } from "../animUtil.js";
+import { getFreeSpinIntroAnim, type IntroParts } from "./FreeSpinIntroAnim.js";
 import { Sparkles } from "./Sparkles.js";
 
 const DESIGN_W = 1920;
 const DESIGN_H = 1080;
 
-const MODE_TITLES: Record<number, { tier: 1 | 2 | 3 }> = {
-	3: { tier: 1 },
-	4: { tier: 2 },
-	5: { tier: 3 }
-};
-
-const GAPS = {
-	titleToWon: -140, // title overlaps youWon slightly
-	wonToPlate: -130, // YOU WON overlaps the upper portion of the plate
-	plateToFreeSpin: -60, // freeSpin sits just below the plate
-	freeSpinToButton: 80
-};
-
-const STACK_Y_OFFSET = -DESIGN_H * 0.05; // 5 % above centre
-
-const PLATE_DESIGN_W = DESIGN_W * 0.25; // 34 % of 1920 = ~650 px
-const TITLE_DESIGN_W = DESIGN_W * 0.5; // 50 % of 1920 = 960 px
-const GLOW_ROTATION_SPEED = 0.00015;
-
-const START_SCALE = { title: 0.8, plate: 0, youWon: 0.6, freeSpin: 0.6, count: 0.6, glow: 0.86 };
+const T = THEME.freeSpinIntro;
 
 // ── Class ──────────────────────────────────────────────────────────────────────
 
 export class FreeSpinIntro extends Resizable {
 	// Sprites
-	private readonly glow = Sprite.from("Glow_Tier1.png");
-	private readonly plate = Sprite.from("Plate_Tier1.png");
-	private readonly title = Sprite.from("Title_Tier1.png");
+	private readonly glow = Sprite.from(tex(T.textures.glow, 1));
+	private readonly plate = Sprite.from(tex(T.textures.plate, 1));
+	private readonly title = Sprite.from(tex(T.textures.title, 1));
 
-	private readonly youWonText = makeStyledText({ content: "YOU WON", size: 100, silverGradient: true, stroke: true });
-	private readonly numberText = makeStyledText({ content: "", size: 200, color: 0xffd700, bold: true, stroke: true });
-	private readonly freeSpinText = makeStyledText({
-		content: "FREE SPINS!",
+	private readonly youWonText = makeStyledText({
+		content: T.text.youWon,
 		size: 100,
 		silverGradient: true,
 		stroke: true
 	});
-	private readonly btn = this.makeButton("PRESS TO CONTINUE");
+	private readonly numberText = makeStyledText({ content: "", size: 200, color: 0xffd700, bold: true, stroke: true });
+	private readonly freeSpinText = makeStyledText({
+		content: T.text.freeSpin,
+		size: 100,
+		silverGradient: true,
+		stroke: true
+	});
+	private readonly btn = this.makeButton(T.text.button);
 	private readonly sparkles = new Sparkles();
 
+	private readonly anim = getFreeSpinIntroAnim(T.anim);
 	private targetCount = 0;
 
 	private titleBase = { x: 1, y: 1 };
@@ -63,7 +50,7 @@ export class FreeSpinIntro extends Resizable {
 	private dismissAnimationPromise: Promise<void> | undefined;
 
 	private readonly glowRotationTick = (ticker: Ticker): void => {
-		this.glow.rotation += GLOW_ROTATION_SPEED * ticker.deltaMS;
+		this.glow.rotation += T.glowRotationSpeed * ticker.deltaMS;
 	};
 
 	constructor() {
@@ -84,10 +71,10 @@ export class FreeSpinIntro extends Resizable {
 	// ── Public API ─────────────────────────────────────────────────────────────
 
 	public setup(count: number, mode: number, onDismiss: () => void): void {
-		const tier = (MODE_TITLES[mode] ?? MODE_TITLES[3]).tier;
-		this.glow.texture = Texture.from(`Glow_Tier${tier}.png`);
-		this.plate.texture = Texture.from(`Plate_Tier${tier}.png`);
-		this.title.texture = Texture.from(`Title_Tier${tier}.png`);
+		const tier = T.tierByMode[mode] ?? T.tierByMode[3];
+		this.glow.texture = Texture.from(tex(T.textures.glow, tier));
+		this.plate.texture = Texture.from(tex(T.textures.plate, tier));
+		this.title.texture = Texture.from(tex(T.textures.title, tier));
 		this.targetCount = count;
 		this.numberText.text = `${count}`;
 		this.dismissAnimationPromise = undefined;
@@ -97,10 +84,10 @@ export class FreeSpinIntro extends Resizable {
 		this.glow.scale.set(glowCover);
 		this.glowBase = { x: glowCover, y: glowCover };
 
-		const plateFit = PLATE_DESIGN_W / this.plate.texture.width;
+		const plateFit = (DESIGN_W * T.plateWidth) / this.plate.texture.width;
 		this.plate.scale.set(plateFit);
 
-		const titleFit = TITLE_DESIGN_W / this.title.texture.width;
+		const titleFit = (DESIGN_W * T.titleWidth) / this.title.texture.width;
 		this.title.scale.set(titleFit);
 
 		for (const el of [this.youWonText, this.freeSpinText]) el.scale.set(1);
@@ -177,16 +164,16 @@ export class FreeSpinIntro extends Resizable {
 
 		// Vertical stack centred slightly above screen centre
 		const rows = [
-			{ el: this.title, gapAfter: GAPS.titleToWon },
-			{ el: this.youWonText, gapAfter: GAPS.wonToPlate },
-			{ el: this.plate, gapAfter: GAPS.plateToFreeSpin, extra: [this.numberText] },
-			{ el: this.freeSpinText, gapAfter: GAPS.freeSpinToButton },
+			{ el: this.title, gapAfter: T.gaps.titleToWon },
+			{ el: this.youWonText, gapAfter: T.gaps.wonToPlate },
+			{ el: this.plate, gapAfter: T.gaps.plateToFreeSpin, extra: [this.numberText] },
+			{ el: this.freeSpinText, gapAfter: T.gaps.freeSpinToButton },
 			{ el: this.btn, gapAfter: 0 }
 		];
 
 		const totalHeight = rows.reduce((s, r) => s + r.el.height + r.gapAfter, 0);
 
-		let y = -totalHeight / 2 + STACK_Y_OFFSET;
+		let y = -totalHeight / 2 + DESIGN_H * T.stackYOffset;
 		for (const row of rows) {
 			y += row.el.height / 2;
 			row.el.position.set(0, y);
@@ -198,86 +185,48 @@ export class FreeSpinIntro extends Resizable {
 		this.sparkles.setRadius(this.plate.width * 0.55, this.plate.height * 0.55);
 	}
 
-	// ── Animations ────────────────────────────────────────────────────────────
+	// ── Animations (choreography lives in FreeSpinIntroAnim presets) ───────────
+
+	private get parts(): IntroParts {
+		return {
+			glow: this.glow,
+			plate: this.plate,
+			title: this.title,
+			youWon: this.youWonText,
+			number: this.numberText,
+			freeSpin: this.freeSpinText,
+			btn: this.btn,
+			sparkles: this.sparkles,
+			base: {
+				glow: this.glowBase,
+				plate: this.plateBase,
+				title: this.titleBase,
+				youWon: this.youWonBase,
+				freeSpin: this.freeSpinBase,
+				number: this.numberBase
+			},
+			startScale: T.startScale,
+			targetCount: this.targetCount,
+			spinGlow: on => {
+				Ticker.shared.remove(this.glowRotationTick);
+				if (on) Ticker.shared.add(this.glowRotationTick);
+			}
+		};
+	}
 
 	private async playIntro(): Promise<void> {
 		this.resetForReveal();
-		const titleRestY = this.title.y;
-		this.title.y = titleRestY - 40;
-
-		Ticker.shared.remove(this.glowRotationTick);
-		Ticker.shared.add(this.glowRotationTick);
-
-		// t=0 — glow fades + scales to full
-		void this.tweenAlpha(this.glow, 1, turboDuration(450, 200));
-		void this.tweenScale(
-			this.glow,
-			this.glowBase.x / START_SCALE.glow,
-			this.glowBase.y / START_SCALE.glow,
-			turboDuration(600, 250),
-			outQuad
-		);
-
-		// t=120 — plate pops from scale-0
-		await this.wait(turboDuration(120, 60));
-		void this.tweenAlpha(this.plate, 1, turboDuration(250, 120));
-		void this.tweenScale(this.plate, this.plateBase.x, this.plateBase.y, turboDuration(500, 220), outQuad);
-
-		// t=280 — title slides down
-		await this.wait(turboDuration(160, 70));
-		this.title.alpha = 1;
-		void Tweener.getInstance().addTween(this.title.position, {
-			y: titleRestY,
-			time: turboDuration(400, 180),
-			easing: outQuad
-		});
-
-		// t=300 — YOU WON pops
-		await this.wait(turboDuration(20, 10));
-		this.youWonText.alpha = 1;
-		void this.tweenScale(this.youWonText, this.youWonBase.x, this.youWonBase.y, turboDuration(400, 180), outQuad);
-
-		// t=400 — count pops + counts up
-		await this.wait(turboDuration(100, 50));
-		void this.revealNumber();
-		this.sparkles.start();
-
-		// t=500 — FREE SPINS pops
-		await this.wait(turboDuration(100, 50));
-		this.freeSpinText.alpha = 1;
-		void this.tweenScale(this.freeSpinText, this.freeSpinBase.x, this.freeSpinBase.y, turboDuration(400, 180), outQuad);
-
-		// Button slides up
-		await this.wait(turboDuration(150, 70));
-		await this.fadeInButton();
+		await this.anim.playIntro(this.parts);
 	}
 
-	private async runDismissAnimation(): Promise<void> {
-		const STEP = 60;
-		const IMPLODE = 340;
-		const collapse = [this.freeSpinText, this.youWonText, this.numberText, this.title, this.plate];
-
-		void this.tweenAlpha(this.glow, 0, IMPLODE);
-		void this.tweenAlpha(this.sparkles, 0, IMPLODE * 0.5);
-		void this.tweenAlpha(this.btn, 0, turboDuration(200, 100));
-
-		await Promise.all(
-			collapse.map((el, i) =>
-				this.wait(i * STEP).then(() =>
-					Promise.all([
-						this.tweenAlpha(el, 0, Math.round(IMPLODE * 0.85)),
-						this.tweenScale(el, 0, 0, IMPLODE),
-						Tweener.getInstance().addTween(el.position, { x: 0, y: 0, time: IMPLODE, easing: outQuad })
-					])
-				)
-			)
-		);
+	private runDismissAnimation(): Promise<void> {
+		return this.anim.playDismiss(this.parts);
 	}
 
 	private resetForReveal(): void {
 		const gb = this.glowBase;
 		this.glow.alpha = 0;
-		this.glow.scale.set(gb.x * START_SCALE.glow, gb.y * START_SCALE.glow);
+		this.glow.scale.set(gb.x * T.startScale.glow, gb.y * T.startScale.glow);
 
 		this.title.alpha = 0;
 		this.title.scale.set(this.titleBase.x, this.titleBase.y);
@@ -286,64 +235,20 @@ export class FreeSpinIntro extends Resizable {
 		this.plate.scale.set(0, 0);
 
 		this.youWonText.alpha = 0;
-		this.youWonText.scale.set(this.youWonBase.x * START_SCALE.youWon, this.youWonBase.y * START_SCALE.youWon);
+		this.youWonText.scale.set(this.youWonBase.x * T.startScale.youWon, this.youWonBase.y * T.startScale.youWon);
 
 		this.numberText.alpha = 0;
 		this.numberText.text = "0";
-		this.numberText.scale.set(this.numberBase.x * START_SCALE.count, this.numberBase.y * START_SCALE.count);
+		this.numberText.scale.set(this.numberBase.x * T.startScale.count, this.numberBase.y * T.startScale.count);
 
 		this.freeSpinText.alpha = 0;
-		this.freeSpinText.scale.set(this.freeSpinBase.x * START_SCALE.freeSpin, this.freeSpinBase.y * START_SCALE.freeSpin);
+		this.freeSpinText.scale.set(
+			this.freeSpinBase.x * T.startScale.freeSpin,
+			this.freeSpinBase.y * T.startScale.freeSpin
+		);
 
 		this.btn.alpha = 0;
 		this.sparkles.alpha = 1;
-	}
-
-	private async revealNumber(): Promise<void> {
-		this.numberText.alpha = 1;
-		this.numberText.text = "0";
-		this.numberText.scale.set(this.numberBase.x * START_SCALE.count, this.numberBase.y * START_SCALE.count);
-
-		void this.tweenScale(this.numberText, this.numberBase.x, this.numberBase.y, turboDuration(450, 200), outQuad);
-
-		const counter = { v: 0 };
-		void Tweener.getInstance()
-			.addTween(counter, {
-				v: this.targetCount,
-				time: turboDuration(700, 350),
-				easing: outQuad,
-				onUpdate: () => {
-					this.numberText.text = String(Math.round(counter.v));
-				}
-			})
-			.then(() => {
-				this.numberText.text = String(this.targetCount);
-			});
-	}
-
-	private async fadeInButton(): Promise<void> {
-		const targetY = this.btn.y;
-		this.btn.y += 15;
-		await Tweener.getInstance().addTween(this.btn, {
-			alpha: 1,
-			y: targetY,
-			time: turboDuration(380, 300),
-			easing: gravityIn
-		});
-	}
-
-	// ── Helpers ───────────────────────────────────────────────────────────────
-
-	private wait(ms: number): Promise<void> {
-		return new Promise(r => setTimeout(r, ms));
-	}
-
-	private tweenScale(el: Container, x: number, y: number, time: number, easing = gravityIn) {
-		return Tweener.getInstance().addTween(el.scale, { x, y, time, easing });
-	}
-
-	private tweenAlpha(el: Container, alpha: number, time: number, easing = gravityIn) {
-		return Tweener.getInstance().addTween(el, { alpha, time, easing });
 	}
 
 	private makeButton(label: string): Container {

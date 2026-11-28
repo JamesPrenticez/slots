@@ -95,12 +95,14 @@ Cascade steps can attach multiplier cells to grid positions. `MultiplierCellLaye
 
 ### Asset pipeline
 
-Config lives in `.assetpack.js`. Raw artist files go in `raw-assets/` (flat — no game subfolder). AssetPack processes them into `public/assets/`. Generated aliases mirror the source folder/filename path (`sprites{tps}/sym_h1.png` → `sprites/sym_h1.png`, extensions trimmed):
+Config lives in `.assetpack.js`. Raw artist files are grouped **by asset pack**: `raw-assets/packs/<pack>/` (see `raw-assets/packs/README.md`). AssetPack builds them to `public/assets/packs/<pack>/`, and `src/engine/assets.ts` merges the `default` pack with the active one at boot (`?pack=` / debug-menu switcher), stripping the `packs/<name>/` prefix — so game code always uses bare names (`sprites{tps}/sym_h1.png` → `"sym_h1.png"`, `audio/FTS_x.wav` → `"FTS_x"`). A pack only ships the files it changes, except the sprite atlas, which is replaced whole. `pnpm assets:check` reports each pack's overrides and missing sprites.
+
+Per-folder processing inside a pack:
 
 - `sprites{tps}/*.png` → packed texture atlas (`texturePacker`, padding 4, max 4096)
 - `backgrounds/*.png` → optimized textures
-- `audio/*.wav|mp3` → `.mp3` (128 kbps, 44.1 kHz)
-- `spines/` (with per-skeleton subfolders, e.g. `knight/`, `Spineboy/`) and `characters/` → copied through
+- `audio{bundle}/*.wav|mp3` → `.m4a` (128 kbps, 44.1 kHz)
+- `spines/` (with per-skeleton subfolders) and `characters/` → copied through
 
 A `manifest.json` is generated at `public/assets/manifest.json` and loaded by the game at boot.
 

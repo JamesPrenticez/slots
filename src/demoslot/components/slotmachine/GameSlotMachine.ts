@@ -5,7 +5,9 @@ import type { CascadeWinPosition } from "../../../slot/components/slotmachine/Ca
 import { CascadeSlotMachine } from "../../../slot/components/slotmachine/CascadeSlotMachine.js";
 import type { SymbolWithId } from "../../../slot/renderer/Reel.js";
 import { SLOT_CONFIG, START_GRID } from "../../config/GameConfig.js";
+import { THEME } from "../../config/ThemeConfig.js";
 import { GameWinEffect } from "../results/GameWinEffect.js";
+import { getSymbolAnim } from "../symbols/SymbolAnimations.js";
 import { SymbolView } from "../symbols/SymbolView.js";
 import { WinGroupLabel } from "../WinGroupLabel.js";
 
@@ -25,11 +27,15 @@ export class GameSlotMachine extends CascadeSlotMachine {
 		GameSlotMachine.instance ??= new GameSlotMachine();
 		return GameSlotMachine.instance;
 	}
+	private readonly symbolAnim = getSymbolAnim(THEME.symbols.anim);
+
 	constructor() {
 		super(SLOT_CONFIG);
+		this.setReelBackground(THEME.backgrounds.reel);
 		this.initGrid(
 			(sym: SymbolWithId, initialY: number) => new SymbolView(sym, initialY, SLOT_CONFIG.symbolSize),
-			START_GRID
+			START_GRID,
+			this.symbolAnim
 		);
 
 		// Add win effect layer as child — inherits position/scale from slot machine
@@ -78,7 +84,7 @@ export class GameSlotMachine extends CascadeSlotMachine {
 				if (!isWin) {
 					view.blur();
 				} else {
-					(view as SymbolView).pump(2, 1.1, 800, pumpStart); // ← pass shared start
+					this.symbolAnim.winPulse(view, pumpStart, THEME.symbols.winPulse); // ← pass shared start
 				}
 			}
 		}

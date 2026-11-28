@@ -1,38 +1,27 @@
 import { Container, Rectangle, Sprite, Text, Ticker } from "pixi.js";
 
-import { turboDuration } from "../../../common/util/Duration.js";
-import { gravityIn, outQuad } from "../../../common/util/Easing.js";
 import { makeStyledText } from "../../../common/util/Texthelper.js";
-import { Tweener } from "../../../common/util/Tweener.js";
 import { Resizable } from "../../../slot/renderer/Resizable.js";
+import { THEME } from "../../config/ThemeConfig.js";
+import { getFreeSpinOutroAnim, type OutroParts } from "./FreeSpinOutroAnim.js";
 import { Sparkles } from "./Sparkles.js";
 
 const DESIGN_W = 1920;
 const DESIGN_H = 1080;
 
-const PLATE_DESIGN_W = DESIGN_W * 0.25; // 30 % of 1920 = 576 px
-const TITLE_DESIGN_W = DESIGN_W * 0.48; // 48 % of 1920 = 922 px
-const FORK_DESIGN_W = DESIGN_W * 0.42; // fork handles poke past plate edges
-
-// Stack geometry
-const TITLE_TO_PLATE_GAP = -40;
-const PLATE_TO_BUTTON_GAP = 110;
-const STACK_Y_OFFSET = -DESIGN_H * 0.03; // slight upward shift
-
-const GLOW_ROTATION_SPEED = 0.0004;
-const POP_TIME = 300;
-const START_SCALE = 0.85;
+const T = THEME.freeSpinOutro;
 
 export class FreeSpinOutro extends Resizable {
-	private readonly glow = Sprite.from("Glow_TotalWin.png");
-	private readonly plate = Sprite.from("Plate_TotalWin.png");
-	private readonly fork = Sprite.from("Plate_Cutlery.png");
-	private readonly title = Sprite.from("Title_TotalWin.png");
+	private readonly glow = Sprite.from(T.textures.glow);
+	private readonly plate = Sprite.from(T.textures.plate);
+	private readonly fork = Sprite.from(T.textures.cutlery);
+	private readonly title = Sprite.from(T.textures.title);
 	private readonly totalText: Text;
 	private readonly subtitleText: Text;
 	private readonly btn: Container;
 	private readonly sparkles = new Sparkles();
 
+	private readonly anim = getFreeSpinOutroAnim(T.anim);
 	private titleBase = { x: 1, y: 1 };
 	private plateBase = { x: 1, y: 1 };
 	private glowBase = { x: 1, y: 1 };
@@ -43,7 +32,7 @@ export class FreeSpinOutro extends Resizable {
 	private outroScreen = new Rectangle(0, 0, DESIGN_W, DESIGN_H);
 
 	private readonly glowRotationTick = (ticker: Ticker): void => {
-		this.glow.rotation += GLOW_ROTATION_SPEED * ticker.deltaMS;
+		this.glow.rotation += T.glowRotationSpeed * ticker.deltaMS;
 	};
 
 	constructor() {
@@ -52,7 +41,7 @@ export class FreeSpinOutro extends Resizable {
 
 		this.totalText = makeStyledText({ content: "", size: 100, color: 0xffd700, bold: true, stroke: true });
 		this.subtitleText = makeStyledText({ content: "", size: 62, silverGradient: true, bold: true, stroke: true });
-		this.btn = this.makeButton("PRESS TO CONTINUE");
+		this.btn = this.makeButton(T.text.button);
 
 		this.addChild(
 			this.glow,
@@ -70,23 +59,23 @@ export class FreeSpinOutro extends Resizable {
 
 	public setup(totalWin: number, freeSpinsPlayed: number, onDismiss: () => void): void {
 		this.totalText.text = `$${(totalWin / 100).toFixed(2)}`;
-		this.subtitleText.text = `${freeSpinsPlayed} FREE SPINS!`;
+		this.subtitleText.text = T.text.subtitle.replace("{n}", String(freeSpinsPlayed));
 
 		const glowTex = this.glow.texture;
 		const glowCover = Math.max(DESIGN_W / glowTex.width, DESIGN_H / glowTex.height) * 1.4;
 		this.glow.scale.set(glowCover);
 		this.glowBase = { x: glowCover, y: glowCover };
 
-		const plateFit = PLATE_DESIGN_W / this.plate.texture.width;
+		const plateFit = (DESIGN_W * T.plateWidth) / this.plate.texture.width;
 		this.plate.scale.set(plateFit);
 		this.plateBase = { x: plateFit, y: plateFit };
 
-		const titleFit = TITLE_DESIGN_W / this.title.texture.width;
+		const titleFit = (DESIGN_W * T.titleWidth) / this.title.texture.width;
 		this.title.scale.set(titleFit);
 		this.titleBase = { x: titleFit, y: titleFit };
 
 		this.fork.scale.set(1);
-		this.cutleryScale = FORK_DESIGN_W / this.fork.width;
+		this.cutleryScale = (DESIGN_W * T.cutleryWidth) / this.fork.width;
 		this.fork.scale.set(this.cutleryScale);
 
 		for (const el of [this.totalText, this.subtitleText]) el.scale.set(1);
@@ -145,17 +134,17 @@ export class FreeSpinOutro extends Resizable {
 		this.glow.position.set(0, 0);
 
 		const rows = [
-			{ el: this.title, gapAfter: TITLE_TO_PLATE_GAP },
+			{ el: this.title, gapAfter: T.titleToPlateGap },
 			{
 				el: this.plate,
-				gapAfter: PLATE_TO_BUTTON_GAP,
+				gapAfter: T.plateToButtonGap,
 				extra: [this.fork, this.totalText, this.subtitleText, this.sparkles]
 			},
 			{ el: this.btn, gapAfter: 0 }
 		];
 
 		const totalHeight = rows.reduce((s, r) => s + r.el.height + r.gapAfter, 0);
-		let y = -totalHeight / 2 + STACK_Y_OFFSET;
+		let y = -totalHeight / 2 + DESIGN_H * T.stackYOffset;
 
 		for (const row of rows) {
 			y += row.el.height / 2;
@@ -173,92 +162,55 @@ export class FreeSpinOutro extends Resizable {
 
 	// ── Animations ────────────────────────────────────────────────────────────
 
+	private get parts(): OutroParts {
+		return {
+			glow: this.glow,
+			plate: this.plate,
+			fork: this.fork,
+			title: this.title,
+			total: this.totalText,
+			subtitle: this.subtitleText,
+			btn: this.btn,
+			sparkles: this.sparkles,
+			base: {
+				title: this.titleBase,
+				plate: this.plateBase,
+				total: this.totalBase,
+				subtitle: this.subtitleBase,
+				cutlery: this.cutleryScale
+			},
+			spinGlow: on => {
+				Ticker.shared.remove(this.glowRotationTick);
+				if (on) Ticker.shared.add(this.glowRotationTick);
+			}
+		};
+	}
+
 	private async playReveal(): Promise<void> {
 		this.resetForReveal();
-		Ticker.shared.remove(this.glowRotationTick);
-		Ticker.shared.add(this.glowRotationTick);
-
-		void this.fadeAndScaleIn(this.title, this.titleBase, turboDuration(POP_TIME, 120), outQuad);
-		void this.tweenAlpha(this.glow, 1, turboDuration(400, 150));
-
-		await this.wait(turboDuration(130, 40));
-
-		void this.fadeAndScaleIn(this.plate, this.plateBase);
-		void this.fadeAndScaleIn(this.fork, { x: this.cutleryScale, y: this.cutleryScale });
-
-		await this.wait(turboDuration(130, 40));
-
-		this.totalText.alpha = 1;
-		this.totalText.scale.set(this.totalBase.x, this.totalBase.y);
-		void this.popBounce(this.totalText, this.totalBase);
-
-		this.subtitleText.alpha = 1;
-		void this.tweenScale(this.subtitleText, this.subtitleBase.x, this.subtitleBase.y, turboDuration(POP_TIME, 120));
-
-		this.sparkles.start();
-		await this.fadeInButton();
+		await this.anim.playReveal(this.parts);
 	}
 
 	private resetForReveal(): void {
 		this.title.alpha = 0;
-		this.title.scale.set(this.titleBase.x * START_SCALE, this.titleBase.y * START_SCALE);
+		this.title.scale.set(this.titleBase.x * T.startScale.all, this.titleBase.y * T.startScale.all);
 
 		this.plate.alpha = 0;
-		this.plate.scale.set(this.plateBase.x * START_SCALE, this.plateBase.y * START_SCALE);
+		this.plate.scale.set(this.plateBase.x * T.startScale.all, this.plateBase.y * T.startScale.all);
 
 		this.glow.alpha = 0;
-		this.glow.scale.set(this.glowBase.x * 0.86, this.glowBase.y * 0.86);
+		this.glow.scale.set(this.glowBase.x * T.startScale.glow, this.glowBase.y * T.startScale.glow);
 
 		this.fork.alpha = 0;
-		this.fork.scale.set(this.cutleryScale * START_SCALE, this.cutleryScale * START_SCALE);
+		this.fork.scale.set(this.cutleryScale * T.startScale.all, this.cutleryScale * T.startScale.all);
 
 		this.totalText.alpha = 0;
 		this.totalText.scale.set(this.totalBase.x, this.totalBase.y);
 
 		this.subtitleText.alpha = 0;
-		this.subtitleText.scale.set(this.subtitleBase.x * START_SCALE, this.subtitleBase.y * START_SCALE);
+		this.subtitleText.scale.set(this.subtitleBase.x * T.startScale.all, this.subtitleBase.y * T.startScale.all);
 
 		this.btn.alpha = 0;
-	}
-
-	// ── Helpers ───────────────────────────────────────────────────────────────
-
-	private async popBounce(el: Container, base: { x: number; y: number }): Promise<void> {
-		await this.tweenScale(el, base.x * 0.95, base.y * 0.95, turboDuration(120, 60)).then(() =>
-			this.tweenScale(el, base.x, base.y, turboDuration(160, 60))
-		);
-	}
-
-	private async fadeAndScaleIn(
-		el: Sprite,
-		target: { x: number; y: number },
-		time = turboDuration(POP_TIME, 120),
-		easing = gravityIn
-	): Promise<void> {
-		await Promise.all([this.tweenAlpha(el, 1, time, easing), this.tweenScale(el, target.x, target.y, time, easing)]);
-	}
-
-	private async fadeInButton(): Promise<void> {
-		const targetY = this.btn.y;
-		this.btn.y += 15;
-		await Tweener.getInstance().addTween(this.btn, {
-			alpha: 1,
-			y: targetY,
-			time: turboDuration(380, 300),
-			easing: gravityIn
-		});
-	}
-
-	private wait(ms: number): Promise<void> {
-		return new Promise(r => setTimeout(r, ms));
-	}
-
-	private tweenScale(el: Container, x: number, y: number, time: number, easing = gravityIn) {
-		return Tweener.getInstance().addTween(el.scale, { x, y, time, easing });
-	}
-
-	private tweenAlpha(el: Container, alpha: number, time: number, easing = gravityIn) {
-		return Tweener.getInstance().addTween(el, { alpha, time, easing });
 	}
 
 	private makeButton(label: string): Container {

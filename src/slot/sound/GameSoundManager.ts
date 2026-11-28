@@ -4,83 +4,9 @@ import { Assets } from "pixi.js";
 import { useAudioStore, useGameStore } from "@stores";
 
 import type { BehaviourState } from "../../common/CoreState.js";
-
-/** Base-game BGM layers — streamed, never fully buffered. */
-const BASE_BGM = {
-	base: "AN_OLD_FASHIONED_8BarLoop_BASS",
-	lightDrums: "AN_OLD_FASHIONED_8BarLoop_BASS_LIGHTDRUMS",
-	guitarDrums: "AN_OLD_FASHIONED_8BarLoop_BASS_GUITAR_LIGHTDRUMS",
-	escalation: "AN_OLD_FASHIONED_8BarLoop_ESC2"
-} as const;
-
-/** Bonus-game BGM layers — streamed, never fully buffered. */
-const BONUS_BGM = {
-	base: "ALL-STAR_SWING_BAND_Base_8BarLoop",
-	escalation: "ALL-STAR_SWING_BAND_Esc1_8BarLoop",
-	winPayout: "ALL-STAR_SWING_BAND_WinPayout_8BarLoop",
-	winIdle: "ALL-STAR_SWING_BAND_WinPayout_Idle2_8BarLoop",
-	bonusEnd: "ALL-STAR_SWING_BAND_BonusEndContinue"
-} as const;
+import type { SfxKey, SoundTheme } from "./SoundTheme.js";
 
 const BONUS_MODES: ReadonlySet<BehaviourState> = new Set(["FREE_SPINS", "FREE_ROUNDS"]);
-
-// ── SFX tiers ───────────────────────────────────────────────────────────────
-
-/**
- * Tier 1 — preloaded BEFORE the game shows.
- * These are the sounds needed on the very first spin / interaction.
- */
-const SFX_TIER1: readonly string[] = [
-	"FTS_SpinButtonClick",
-	"FTS_ReelDrop_Simple",
-	"FTS_ReelDrop_Simple_WaterFX",
-	"FTS_ReelDrop_SlowRoll",
-	"FTS_ReelDrop_Tumble1",
-	"FTS_ScatterDrop1_v2",
-	"FTS_ScatterDrop2_v2",
-	"FTS_ScatterDrop3_v2",
-	"FTS_ScatterDrop4_v2",
-	"FTS_ScatterDrop5_v2",
-	"FTS_SeasonBite_v3",
-	"FTS_SweetHighPayingSymbol_v2",
-	"FTS_Sizzle_v2",
-	"FTS_SlimeDrop"
-];
-
-/**
- * Tier 2 — preloaded NON-BLOCKING after the game becomes visible.
- * Quips, burst effects, bonus-entry stings.
- */
-const SFX_TIER2: readonly string[] = [
-	"FTS_Gloop_Quip1",
-	"FTS_Gloop_Quip2",
-	"FTS_Gloop_Quip3",
-	"FTS_SlimeBurst_2",
-	"FTS_SlimeSpinner",
-	"FTS_SuperSlimeDrop",
-	"FTS_DrumRoll",
-	"FTS_BonusEnter_Slime",
-	"FTS_BonusEnter_Continue",
-	"FTS_BonusPayout_Impact1",
-	"FTS_BonusPayout_Impact2",
-	"FTS_BonusPayout_Impact3"
-];
-
-/**
- * Bonus SFX — preloaded on-demand during the bonus intro animation,
- * so they are ready before the player can trigger them.
- */
-const SFX_BONUS: readonly string[] = [
-	"FTS_FreeSpins_Trigger",
-	"FTS_FreeSpins_Retrigger",
-	"FTS_FreeSpins_Complete",
-	"FTS_WinPayout_BigWin",
-	"FTS_WinPayout_MegaWin",
-	"FTS_WinPayout_EpicWin",
-	"FTS_WinPayout_Jackpot",
-	"FTS_Multiplier_Reveal",
-	"FTS_Multiplier_Increase"
-];
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -109,7 +35,9 @@ const audioSrc = (alias: string): string[] => {
  *
  * Public API
  * ──────────
- *   sound.playSfx(alias)          one-shot SFX (polyphonic)
+ *   sound.cue(key, i?)            one-shot SFX for a SoundTheme key (what game code should use)
+ *   sound.loopCue / stopLoopCue   looping SFX for a SoundTheme key
+ *   sound.playSfx(alias)          one-shot SFX by raw alias (polyphonic)
  *   sound.playLoop(alias)         start a looping SFX
  *   sound.stopLoop(alias)         stop a looping SFX
  *   sound.stop(alias)             stop all instances of one alias
@@ -136,6 +64,36 @@ export class GameSoundManager {
 	}
 
 	private constructor() {}
+
+	// ── Sound theme (which file plays for each moment) ─────────────────────
+	private theme: SoundTheme | undefined = undefined;
+
+	/** Set the pack's sound map. Call once, before init() or any playback. */
+	public configure(theme: SoundTheme): void {
+		this.theme = theme;
+	}
+
+	private get t(): SoundTheme {
+		if (!this.theme) throw new Error("GameSoundManager.configure(theme) was not called");
+		return this.theme;
+	}
+
+	private alias(key: SfxKey, i = 0): string {
+		const v = this.t.sfx[key];
+		return typeof v === "string" ? v : v[Math.min(i, v.length - 1)];
+	}
+
+	/** Play the one-shot SFX the theme maps to `key` (`i` picks from a list, clamped). */
+	public cue(key: SfxKey, i = 0): void {
+		this.playSfx(this.alias(key, i));
+	}
+	public loopCue(key: SfxKey): void {
+		this.playLoop(this.alias(key));
+	}
+	public stopLoopCue(key: SfxKey): void {
+		this.stopLoop(this.alias(key));
+	}
+
 	private readonly bgm = new Map<string, Howl>();
 	private music: Howl | undefined = undefined;
 	private outgoingMusic: Howl | undefined = undefined;
@@ -182,16 +140,13 @@ export class GameSoundManager {
 		this.installAudioUnlock();
 	}
 
-	// GameSoundManager.ts — add near the top with the other const blocks
-	SWEET_HIGH_PAY = new Set(["H2", "H3"]); // ← your actual IDs
-	SAVORY_HIGH_PAY = new Set(["H1", "H4"]); // ← your actual IDs
-
 	public clusterSfx(symbolIds: string[]): string {
+		const { sweet, savory } = this.t.cluster;
 		for (const id of symbolIds) {
-			if (this.SWEET_HIGH_PAY.has(id)) return "FTS_SweetHighPayingSymbol_v2";
-			if (this.SAVORY_HIGH_PAY.has(id)) return "FTS_SeasonBite_v3";
+			if (sweet.includes(id)) return this.alias("clusterSweet");
+			if (savory.includes(id)) return this.alias("clusterSavory");
 		}
-		return "FTS_Sizzle_v2";
+		return this.alias("clusterDefault");
 	}
 
 	private installAudioUnlock(): void {
@@ -226,13 +181,13 @@ export class GameSoundManager {
 	// ── SFX tiers ─────────────────────────────────────────────────────────
 
 	public async preloadSFX(): Promise<void> {
-		await this.loadHowls(SFX_TIER1);
+		await this.loadHowls(this.t.preload.tier1);
 	}
 	public async preloadSFXBackground(): Promise<void> {
-		await this.loadHowls(SFX_TIER2);
+		await this.loadHowls(this.t.preload.tier2);
 	}
 	public async preloadBonusSFX(): Promise<void> {
-		await this.loadHowls(SFX_BONUS);
+		await this.loadHowls(this.t.preload.bonus);
 	}
 
 	private async loadHowls(aliases: readonly string[]): Promise<void> {
@@ -357,29 +312,29 @@ export class GameSoundManager {
 	// ── BGM convenience wrappers ───────────────────────────────────────────
 
 	public playBaseBGM(): void {
-		this.streamMusic(BASE_BGM.base);
+		this.streamMusic(this.t.music.base.base);
 	}
 	public playBonusBGM(): void {
-		this.streamMusic(BONUS_BGM.base);
+		this.streamMusic(this.t.music.bonus.base);
 	}
 	public playWinPayoutBGM(): void {
-		this.streamMusic(BONUS_BGM.winPayout);
+		this.streamMusic(this.t.music.bonus.winPayout);
 	}
 	public playWinIdleBGM(): void {
-		this.streamMusic(BONUS_BGM.winIdle);
+		this.streamMusic(this.t.music.bonus.winIdle);
 	}
 	public playBonusEndBGM(): void {
-		this.streamMusic(BONUS_BGM.bonusEnd);
+		this.streamMusic(this.t.music.bonus.bonusEnd);
 	}
 	public escalateBaseBGM(): void {
-		this.streamMusic(BASE_BGM.escalation);
+		this.streamMusic(this.t.music.base.escalation);
 	}
 	public escalateBonusBGM(): void {
-		this.streamMusic(BONUS_BGM.escalation);
+		this.streamMusic(this.t.music.bonus.escalation);
 	}
 
 	public playBaseLightDrumsBGM(): void {
-		this.streamMusic(BASE_BGM.lightDrums);
+		this.streamMusic(this.t.music.base.lightDrums);
 	}
 
 	// ── SFX public API ────────────────────────────────────────────────────
@@ -444,14 +399,7 @@ export class GameSoundManager {
 			const { musicVolume } = useAudioStore.getState();
 			this.music.fade(this.music.volume(), musicVolume * this.musicDuckFactor, 400);
 		}
-		const stings: Record<number, string> = {
-			1: "FTS_WinPayout_BigWin",
-			2: "FTS_WinPayout_MegaWin",
-			3: "FTS_WinPayout_EpicWin",
-			4: "FTS_WinPayout_Jackpot"
-		};
-		const alias = stings[tier];
-		if (alias) this.playSfx(alias);
+		this.cue("winTier", tier - 1);
 	}
 
 	public onWinComplete(): void {

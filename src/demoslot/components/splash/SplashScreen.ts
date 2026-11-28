@@ -10,85 +10,16 @@ import { GameBridge } from "../../../engine/GameBridge.js";
 import { ViewStore } from "../../../fanfarebaseslot/ViewStore.js";
 import { DismissableScreen } from "../../../slot/components/DismissableScreen.js";
 import { CoreController } from "../../../slot/controllers/CoreController.js";
+import { type SplashCard, THEME } from "../../config/ThemeConfig.js";
 import { GameBackground } from "../background/GameBackground.js";
 import { GameSlotMachine } from "../slotmachine/GameSlotMachine.js";
 
-const CARD_W = 382;
-const CARD_H = 500;
-
-const BODY = { cx: 191, cy: 390, wrap: 342, size: 22 };
-
-interface HeroDef {
-	img: string;
-	mode: "width" | "contain";
-	cx: number;
-	cy: number;
-	boxW: number;
-	boxH?: number;
-}
-
-interface CardDef {
-	tileKey: string;
-	artDef: HeroDef;
-	titleKey: string;
-	titleCx: number;
-	titleCy: number;
-	titleBoxW: number;
-	titleRot: number;
-	body: string;
-}
-
-const CARDS: CardDef[] = [
-	{
-		tileKey: "kraid-tile.png",
-		titleKey: "kraid-title.png",
-		artDef: { img: "kraid-open.png", mode: "width", cx: 191, cy: 87, boxW: 309 },
-		titleCx: 192,
-		titleCy: 279,
-		titleBoxW: 266,
-		titleRot: 1.05,
-		body: "Land 3+ Bonus Symbols to enter Gloop's Kitchen Raid Bonuses!"
-	},
-	{
-		tileKey: "gloop-tile.png",
-		titleKey: "gloop-title.png",
-		artDef: { img: "gloop-art.png", mode: "contain", cx: 185, cy: 95, boxW: 350, boxH: 230 },
-		titleCx: 191,
-		titleCy: 281,
-		titleBoxW: 289,
-		titleRot: -0.94,
-		body: "Gloop Symbols Streak across the board. Super Gloop leaves Slime Frames!"
-	},
-	{
-		tileKey: "meal-tile.png",
-		titleKey: "meal-title.png",
-		artDef: { img: "meal-art.png", mode: "contain", cx: 193, cy: 94, boxW: 360, boxH: 268 },
-		titleCx: 193,
-		titleCy: 289,
-		titleBoxW: 356,
-		titleRot: 0,
-		body: "Serving up a MAX WIN of 25,000 times your bet!"
-	}
-];
-
-// ── Screen layout ratios ──────────────────────────────────────────────────────
-
-const LOGO_W_RATIO = 0.1;
-const LOGO_Y_RATIO = 0.12;
-const CARDS_Y_RATIO = 0.25;
-const CARD_H_RATIO = 0.45;
-const CARD_GAP_RATIO = 0.03;
-const BTN_Y_RATIO = 0.92;
-
-const PORT_LOGO_W_RATIO = 0.42;
-const PORT_LOGO_Y_RATIO = 0.06;
-const PORT_CARD_W_RATIO = 0.82;
-const PORT_CARDS_Y_RATIO = 0.18;
-const PORT_DOTS_Y_RATIO = 0.76;
-const PORT_BTN_Y_RATIO = 0.88;
-
-const CAROUSEL_ADVANCE_MS = 2800;
-const CAROUSEL_SLIDE_MS = 450;
+const T = THEME.splash;
+const { width: CARD_W, height: CARD_H } = T.card;
+const BODY = T.card.body;
+const CARDS = T.cards;
+const L = T.layout.landscape;
+const P = T.layout.portrait;
 
 // ── SplashScreen ──────────────────────────────────────────────────────────────
 
@@ -123,16 +54,16 @@ export class SplashScreen extends DismissableScreen {
 		(ViewStore.getInstance().get("Background") as GameBackground).setLogoVisible(false);
 
 		// Background
-		const bg = Sprite.from("background.png");
+		const bg = Sprite.from(T.background);
 		bg.label = "bg";
 		bg.anchor.set(0.5);
 
 		this.bgContainer = new Container();
 		this.bgContainer.addChild(bg);
-		this.bgContainer.filters = [new BlurFilter({ strength: 10, quality: 8 })];
+		this.bgContainer.filters = [new BlurFilter({ strength: T.blurStrength, quality: 8 })];
 
 		// Logo
-		this.logo = Sprite.from("logo.png");
+		this.logo = Sprite.from(T.logo);
 		this.logo.anchor.set(0.5);
 
 		for (const def of CARDS) this.cards.push(this.buildCard(def));
@@ -158,7 +89,7 @@ export class SplashScreen extends DismissableScreen {
 		const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
 		this.pressText = new Text({
-			text: "PRESS TO CONTINUE",
+			text: T.pressText,
 			style: {
 				fontFamily: "Titan One",
 				fontSize: 22,
@@ -203,15 +134,15 @@ export class SplashScreen extends DismissableScreen {
 	private async runPulse(): Promise<void> {
 		while (this.running) {
 			await Tweener.getInstance().addTween(this.pressText, {
-				alpha: 0.15,
-				time: 650
+				alpha: T.pulse.minAlpha,
+				time: T.pulse.halfMs
 			});
 
 			if (!this.running) break;
 
 			await Tweener.getInstance().addTween(this.pressText, {
 				alpha: 1.0,
-				time: 650
+				time: T.pulse.halfMs
 			});
 		}
 	}
@@ -220,7 +151,7 @@ export class SplashScreen extends DismissableScreen {
 
 	private async runCarousel(): Promise<void> {
 		while (this.running && this.isPortrait) {
-			await createAbortableDelay(CAROUSEL_ADVANCE_MS).promise;
+			await createAbortableDelay(T.carousel.advanceMs).promise;
 
 			if (!this.running || !this.isPortrait) break;
 
@@ -232,7 +163,7 @@ export class SplashScreen extends DismissableScreen {
 
 			void Tweener.getInstance().addTween(this.carouselStrip.position, {
 				x: -this.carouselIndex * cardW,
-				time: CAROUSEL_SLIDE_MS,
+				time: T.carousel.slideMs,
 				easing: outQuad
 			});
 
@@ -280,8 +211,8 @@ export class SplashScreen extends DismissableScreen {
 
 		this.layoutBg(cx, cy, sw, sh);
 
-		this.logo.scale.set((sw * LOGO_W_RATIO) / this.logo.texture.width);
-		this.logo.position.set(cx, Math.round(sy + sh * LOGO_Y_RATIO));
+		this.logo.scale.set((sw * L.logoW) / this.logo.texture.width);
+		this.logo.position.set(cx, Math.round(sy + sh * L.logoY));
 
 		for (const c of this.cards) {
 			if (c.parent !== this) this.addChild(c);
@@ -290,8 +221,8 @@ export class SplashScreen extends DismissableScreen {
 		this.carouselViewport.visible = false;
 		this.dotsContainer.visible = false;
 
-		const maxH = sh * CARD_H_RATIO;
-		const gap = sw * CARD_GAP_RATIO;
+		const maxH = sh * L.cardH;
+		const gap = sw * L.cardGap;
 		const maxW3 = (sw - gap * 2) / 3;
 
 		const scale = Math.min(maxH / CARD_H, maxW3 / CARD_W);
@@ -302,7 +233,7 @@ export class SplashScreen extends DismissableScreen {
 		const totalW = scaledW * 3 + Math.round(gap) * 2;
 
 		const startX = Math.round(cx - totalW / 2 + scaledW / 2);
-		const cardY = Math.round(sy + sh * CARDS_Y_RATIO + scaledH / 2);
+		const cardY = Math.round(sy + sh * L.cardsY + scaledH / 2);
 
 		this.cards.forEach((card, i) => {
 			card.scale.set(scale);
@@ -311,7 +242,7 @@ export class SplashScreen extends DismissableScreen {
 		});
 
 		this.pressText.style.fontSize = 22;
-		this.pressText.position.set(cx, Math.round(sy + sh * BTN_Y_RATIO));
+		this.pressText.position.set(cx, Math.round(sy + sh * L.btnY));
 	}
 
 	private applyPortrait(screen: Rectangle): void {
@@ -326,16 +257,16 @@ export class SplashScreen extends DismissableScreen {
 
 		this.layoutBg(cx, cy, sw, sh);
 
-		this.logo.scale.set((sw * PORT_LOGO_W_RATIO) / this.logo.texture.width);
-		this.logo.position.set(cx, Math.round(sy + sh * PORT_LOGO_Y_RATIO));
+		this.logo.scale.set((sw * P.logoW) / this.logo.texture.width);
+		this.logo.position.set(cx, Math.round(sy + sh * P.logoY));
 
-		const cardScale = (sw * PORT_CARD_W_RATIO) / CARD_W;
+		const cardScale = (sw * P.cardW) / CARD_W;
 
 		const scaledW = Math.round(CARD_W * cardScale);
 		const scaledH = Math.round(CARD_H * cardScale);
 
 		const viewX = Math.round(cx - scaledW / 2);
-		const viewY = Math.round(sy + sh * PORT_CARDS_Y_RATIO);
+		const viewY = Math.round(sy + sh * P.cardsY);
 
 		this.cards.forEach((card, i) => {
 			if (card.parent !== this.carouselStrip) {
@@ -372,7 +303,7 @@ export class SplashScreen extends DismissableScreen {
 
 		const spacing = 22;
 		const dotsX = Math.round(cx - ((CARDS.length - 1) * spacing) / 2);
-		const dotsY = Math.round(sy + sh * PORT_DOTS_Y_RATIO);
+		const dotsY = Math.round(sy + sh * P.dotsY);
 
 		this.dots.forEach((dot, i) => {
 			dot.position.set(dotsX + i * spacing, dotsY);
@@ -381,7 +312,7 @@ export class SplashScreen extends DismissableScreen {
 		this.updateDots(this.carouselIndex);
 
 		this.pressText.style.fontSize = 18;
-		this.pressText.position.set(cx, Math.round(sy + sh * PORT_BTN_Y_RATIO));
+		this.pressText.position.set(cx, Math.round(sy + sh * P.btnY));
 
 		if (!wasPortrait) {
 			this.carouselIndex = 0;
@@ -392,7 +323,7 @@ export class SplashScreen extends DismissableScreen {
 
 	// ── Card builder ─────────────────────────────────────────────────────────────
 
-	private buildCard(def: CardDef): Container {
+	private buildCard(def: SplashCard): Container {
 		const card = new Container();
 		const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -454,10 +385,10 @@ export class SplashScreen extends DismissableScreen {
 			hovered = true;
 			baseY = card.y;
 			baseS = card.scale.x;
-			void Tweener.getInstance().addTween(card.position, { y: baseY - 16, time: 280, easing: outQuad });
+			void Tweener.getInstance().addTween(card.position, { y: baseY - T.hover.lift, time: 280, easing: outQuad });
 			void Tweener.getInstance().addTween(card.scale, {
-				x: baseS * 1.035,
-				y: baseS * 1.035,
+				x: baseS * T.hover.scale,
+				y: baseS * T.hover.scale,
 				time: 280,
 				easing: outQuad
 			});
@@ -469,8 +400,8 @@ export class SplashScreen extends DismissableScreen {
 			const nx = Math.max(-1, Math.min(1, (p.x - card.x) / (card.width / 2)));
 			const ny = Math.max(-1, Math.min(1, (p.y - card.y) / (card.height / 2)));
 			void Tweener.getInstance().addTween(rot, {
-				ay: nx * 0.14,
-				ax: -ny * 0.14,
+				ay: nx * T.hover.tilt,
+				ax: -ny * T.hover.tilt,
 				time: 350,
 				easing: outQuad,
 				onUpdate: applyTilt

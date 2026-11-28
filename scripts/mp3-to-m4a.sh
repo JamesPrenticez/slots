@@ -3,8 +3,8 @@
 # mp3-to-m4a.sh — convert MP3 audio to M4A (AAC 128k) with ffmpeg.
 #
 # Usage:
-#   pnpm audio:m4a                         # convert every *.mp3 in raw-assets/audio
-#   pnpm audio:m4a raw-assets/audio/oof.mp3  # convert one (or more) named files
+#   pnpm audio:m4a                         # convert every *.mp3 in raw-assets/packs/<pack>/audio
+#   pnpm audio:m4a raw-assets/packs/<pack>/audio/oof.mp3  # convert one (or more) named files
 #
 # The .m4a is written alongside each source .mp3. The .mp3 is left in place.
 set -euo pipefail
@@ -14,9 +14,9 @@ if ! command -v ffmpeg >/dev/null 2>&1; then
   exit 1
 fi
 
-# No args → convert everything under raw-assets/audio.
+# No args → convert everything under raw-assets/packs/<pack>/audio.
 if [ "$#" -eq 0 ]; then
-  set -- raw-assets/audio/*.mp3
+  set -- raw-assets/packs/*/audio*/*.mp3
 fi
 
 for src in "$@"; do

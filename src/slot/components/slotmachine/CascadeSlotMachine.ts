@@ -14,6 +14,7 @@ import { ViewStore } from "../../../fanfarebaseslot/ViewStore.js";
 import { CascadeReel } from "../../renderer/CascadeReel.js";
 import type { ReelSymbolView, SymbolWithId } from "../../renderer/Reel.js";
 import { Resizable } from "../../renderer/Resizable.js";
+import type { SymbolAnim } from "../../renderer/SymbolAnim.js";
 import type { SlotMachineConfig } from "./SlotMachine.js";
 
 /**
@@ -57,7 +58,8 @@ export class CascadeSlotMachine extends Resizable {
 	protected readonly reelsHolder = new Container();
 	private readonly cascadeColumns: CascadeReel[] = [];
 
-	private readonly reelBg: Sprite = Sprite.from("reelBg.png");
+	/** Texture is set by the title via setReelBackground(). */
+	private readonly reelBg: Sprite = new Sprite();
 
 	/** Current grid state — grid[col][row], row 0 = top */
 	public grid: Array<Array<SymbolWithId>> = [];
@@ -104,7 +106,8 @@ export class CascadeSlotMachine extends Resizable {
 
 	protected initGrid(
 		symbolViewFactory: (sym: SymbolWithId, initialY: number, col: number) => ReelSymbolView,
-		startGrid: string[][]
+		startGrid: string[][],
+		symbolAnim?: SymbolAnim
 	): void {
 		const { columns, rows, symbolSize, reelGap } = this.config;
 		const totalWidth = this.reelsWidth;
@@ -113,7 +116,13 @@ export class CascadeSlotMachine extends Resizable {
 			const colSymbols: SymbolWithId[] = (startGrid[col] ?? []).slice(0, rows).map(id => ({ id }));
 			while (colSymbols.length < rows) colSymbols.push({ id: "H1" });
 
-			const reel = new CascadeReel(rows, symbolSize, (sym, y) => symbolViewFactory(sym, y, col), colSymbols);
+			const reel = new CascadeReel(
+				rows,
+				symbolSize,
+				(sym, y) => symbolViewFactory(sym, y, col),
+				colSymbols,
+				symbolAnim
+			);
 			reel.position.set(col * (symbolSize + reelGap) - totalWidth / 2 + symbolSize / 2, -this.reelsHeight / 2);
 			this.reelsHolder.addChild(reel);
 			this.cascadeColumns.push(reel);
@@ -155,7 +164,7 @@ export class CascadeSlotMachine extends Resizable {
 			return { delay, anticipating };
 		});
 		//TODO when we have sound for individual reel drop then we need to figure out where to play these sounds
-		GameSoundManager.getInstance().playSfx(`FTS_ReelDrop_SlowRoll`);
+		GameSoundManager.getInstance().cue("reelSlowRoll");
 		await Promise.all(
 			this.cascadeColumns.map((reel, col) => {
 				const symbols = newGrid[col].map(id => ({ id }));

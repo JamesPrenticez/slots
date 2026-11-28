@@ -55,6 +55,7 @@ export class FanfareBaseSlotController extends CoreController {
 
 	private constructor() {
 		super(REEL_ASPECT);
+		GameSoundManager.getInstance().configure(THEME.sounds);
 		BetData.getInstance().init(DEFAULT_BET, AVAILABLE_BETS);
 		WinData.getInstance().setViewWin(0);
 	}
@@ -215,7 +216,7 @@ export class FanfareBaseSlotController extends CoreController {
 			}
 
 			await sm.allIn(landingGrid);
-			GameSoundManager.getInstance().stopLoop("FTS_DrumRoll");
+			GameSoundManager.getInstance().stopLoopCue("drumRoll");
 		}
 
 		// ── Show the game ─────────────────────────────────────────────────────────
@@ -230,7 +231,7 @@ export class FanfareBaseSlotController extends CoreController {
 			sound.playBonusBGM();
 			void sound.preloadBonusSFX();
 		} else {
-			sound.playBaseBGM(); // queues AN_OLD_FASHIONED_8BarLoop_BASS
+			sound.playBaseBGM(); // queues the base BGM
 			sound.tryUnlockAudio(); // attempt early resume; no-op on Chrome
 		}
 

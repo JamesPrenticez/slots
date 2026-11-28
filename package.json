@@ -20,7 +20,8 @@
 		"audio:m4a": "bash scripts/mp3-to-m4a.sh",
 		"assets:build": "assetpack build",
 		"assets:watch": "assetpack watch",
-		"assets:clean": "rimraf public/assets/demoslot",
+		"assets:clean": "rimraf public/assets",
+		"assets:check": "node scripts/check-packs.mjs",
 		"prepare": "husky"
 	},
 	"dependencies": {

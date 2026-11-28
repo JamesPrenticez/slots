@@ -2,6 +2,9 @@ import { type Rectangle, Sprite, Texture } from "pixi.js";
 
 import { Background } from "../../../slot/components/background/Background.js";
 import type { LogoArea } from "../../../slot/components/layout/LogoArea.js";
+import { THEME } from "../../config/ThemeConfig.js";
+
+const T = THEME.backgrounds;
 
 /**
  * GameBackground — DemoSlot's concrete background implementation.
@@ -26,10 +29,10 @@ export class GameBackground extends Background {
 	constructor(private readonly logoArea: LogoArea) {
 		super();
 
-		this.bgSprite = Sprite.from("background");
+		this.bgSprite = Sprite.from(T.main);
 		this.bgSprite.anchor.set(0.5);
 
-		this.logo = Sprite.from("logo");
+		this.logo = Sprite.from(T.logo);
 		this.logo.anchor.set(0.5);
 
 		this.addChild(this.bgSprite, this.logo);
@@ -44,13 +47,13 @@ export class GameBackground extends Background {
 	}
 
 	protected override resizeLandscape(screen: Rectangle, _trueScreen: Rectangle): void {
-		this.layout(screen, "left", 0.55);
+		this.layout(screen, "left", T.logoScale.landscape);
 	}
 	protected override resizePortrait(screen: Rectangle, _trueScreen: Rectangle): void {
-		this.layout(screen, "center", 0.55);
+		this.layout(screen, "center", T.logoScale.portrait);
 	}
 	protected override resizeDesktop(screen: Rectangle, _trueScreen: Rectangle): void {
-		this.layout(screen, "left", 1.0);
+		this.layout(screen, "left", T.logoScale.desktop);
 	}
 
 	private layout(screen: Rectangle, align: "left" | "center", logoScale: number): void {

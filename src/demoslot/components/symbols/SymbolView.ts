@@ -2,6 +2,9 @@ import { Container, Graphics, Sprite } from "pixi.js";
 
 import type { ReelSymbolView, SymbolWithId } from "../../../slot/renderer/Reel.js";
 import { SymbolConverter } from "../../config/SymbolConverter.js";
+import { THEME } from "../../config/ThemeConfig.js";
+
+const T = THEME.symbols;
 
 /**
  * SymbolView — one symbol cell on a reel.
@@ -40,30 +43,10 @@ export class SymbolView extends Container implements ReelSymbolView {
 	}
 
 	public blur(): void {
-		this.tint = 0x595959;
+		this.tint = T.blurTint;
 	}
 	public unblur(): void {
 		this.tint = 0xffffff;
-	}
-
-	public pump(count = 2, maxScale = 1.2, duration = 800, start = performance.now()): void {
-		const tick = () => {
-			const progress = Math.min((performance.now() - start) / duration, 1);
-
-			if (progress >= 1) {
-				this.scale.set(1);
-				return;
-			}
-
-			// Sine wave — count full cycles = count pumps
-			const wave = Math.sin(progress * Math.PI * 2 * count);
-			const scale = 1 + wave * (maxScale - 1);
-			this.scale.set(scale);
-
-			requestAnimationFrame(tick);
-		};
-
-		requestAnimationFrame(tick);
 	}
 
 	// ── Win highlight ─────────────────────────────────────────────────────────
@@ -75,13 +58,14 @@ export class SymbolView extends Container implements ReelSymbolView {
 			this.addChild(this.highlight);
 		}
 
-		const s = this.size / 2 - 6;
+		const { color, fillAlpha, strokeAlpha, strokeWidth, radius, inset } = T.highlight;
+		const s = this.size / 2 - inset;
 		this.highlight
 			.clear()
-			.roundRect(-s, -s, s * 2, s * 2, 8)
-			.fill({ color: 0xffd700, alpha: 0.28 })
-			.setStrokeStyle({ width: 2, color: 0xffd700, alpha: 0.8 })
-			.roundRect(-s, -s, s * 2, s * 2, 8)
+			.roundRect(-s, -s, s * 2, s * 2, radius)
+			.fill({ color, alpha: fillAlpha })
+			.setStrokeStyle({ width: strokeWidth, color, alpha: strokeAlpha })
+			.roundRect(-s, -s, s * 2, s * 2, radius)
 			.stroke();
 	}
 

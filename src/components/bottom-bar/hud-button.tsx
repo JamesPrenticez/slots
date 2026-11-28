@@ -52,7 +52,7 @@ interface HudButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 const HudButton = ({ children, ...rest }: HudButtonProps) => {
 	const sound = GameSoundManager.getInstance();
 	const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-		sound.playSfx("ui_click");
+		sound.cue("uiClick");
 		rest.onClick?.(e);
 	};
 	return (
